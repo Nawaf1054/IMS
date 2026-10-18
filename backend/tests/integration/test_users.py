@@ -9,13 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.modules.auth.supabase_admin import AuthAdminError
 from app.modules.users import repository
-from app.modules.users.models import Profile, Role
+from app.modules.users.models import Profile
 from tests.factories import FakeAuthAdmin, auth_header, create_profile
-
-
-@pytest.fixture
-def admin(db: Session) -> Profile:
-    return create_profile(db, role=Role.ADMIN, name="Admin", email="admin@example.com")
 
 
 def new_user(**overrides: Any) -> dict[str, Any]:

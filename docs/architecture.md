@@ -131,3 +131,6 @@ Answers to the PRD's open questions (§12) and other choices made along the way.
 | Production DB connection | Supabase session pooler (port 5432, IPv4). If the transaction pooler (6543) is ever used, set psycopg `prepare_threshold=None`. |
 | LLM provider | Decide at M8; `ai/client.py` stays an adapter. |
 | Customer management | Not decided yet. |
+| Category nesting | One level (CAT-2). A category that has subcategories can't be moved under another one (`NESTING_TOO_DEEP`); the mock doesn't check this. |
+| Demo stock | Seeded products start at quantity 0. Stock only changes through movements (PRD-4), so M4 seeds opening-stock movements. |
+| Business settings | `settings` key/value table over defaults from the environment (`DEFAULT_CURRENCY`, `DEFAULT_TAX_RATE`, business name "My Business"). |

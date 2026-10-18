@@ -35,7 +35,8 @@ from app.core.security import get_token_verifier  # noqa: E402
 from app.db.session import engine, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.modules.auth.supabase_admin import get_auth_admin  # noqa: E402
-from tests.factories import FakeAuthAdmin  # noqa: E402
+from app.modules.users.models import Profile, Role  # noqa: E402
+from tests.factories import FakeAuthAdmin, auth_header, create_profile  # noqa: E402
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -87,3 +88,23 @@ def client(db: Session, auth_admin: FakeAuthAdmin) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin(db: Session) -> Profile:
+    return create_profile(db, role=Role.ADMIN, name="Admin", email="admin@example.com")
+
+
+@pytest.fixture
+def staff(db: Session) -> Profile:
+    return create_profile(db, role=Role.STAFF, name="Staff", email="staff@example.com")
+
+
+@pytest.fixture
+def admin_headers(admin: Profile) -> dict[str, str]:
+    return auth_header(admin)
+
+
+@pytest.fixture
+def staff_headers(staff: Profile) -> dict[str, str]:
+    return auth_header(staff)

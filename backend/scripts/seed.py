@@ -1,16 +1,17 @@
-"""Creates the admin user (and, with --demo, the demo accounts the README lists).
+"""Creates the admin user; with --demo, also the demo accounts, catalog and business settings.
 
-Safe to run repeatedly: existing profiles are left alone, and a Supabase user that already
-exists without a profile is linked rather than recreated.
+Safe to run repeatedly: existing users, categories (by name) and products (by SKU) are left
+alone, and a Supabase user that already exists without a profile is linked, not recreated.
 
     uv run python -m scripts.seed           # admin from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD
-    uv run python -m scripts.seed --demo    # + demo admin and staff (password demo1234)
+    uv run python -m scripts.seed --demo    # + demo users (password demo1234), catalog, settings
 """
 
 import argparse
 import logging
 import sys
 import uuid
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -18,9 +19,15 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import SessionLocal
 from app.modules.auth.supabase_admin import AuthAdmin, AuthAdminError, get_auth_admin
+from app.modules.categories import repository as categories_repository
+from app.modules.categories.models import Category
+from app.modules.products import repository as products_repository
+from app.modules.products.models import Product
+from app.modules.settings import repository as settings_repository
 from app.modules.users import repository
 from app.modules.users import service as users_service
 from app.modules.users.models import Role
+from scripts import demo_data
 
 logger = logging.getLogger("seed")
 
@@ -53,11 +60,50 @@ def ensure_user(
     logger.info("created  %s (%s)", email, role.value)
 
 
+def ensure_catalog(db: Session) -> None:
+    by_name: dict[str, Category] = {}
+    for name, parent_name in demo_data.CATEGORIES:
+        category = categories_repository.get_by_name(db, name)
+        if category is None:
+            parent_id = by_name[parent_name].id if parent_name else None
+            category = categories_repository.add(db, Category(name=name, parent_id=parent_id))
+            logger.info("created  category %s", name)
+        by_name[name] = category
+
+    for item in demo_data.PRODUCTS:
+        sku = str(item["sku"])
+        if products_repository.get_by_sku(db, sku):
+            continue
+        products_repository.add(
+            db,
+            Product(
+                name=str(item["name"]),
+                sku=sku,
+                category_id=by_name[str(item["category"])].id,
+                cost_price=Decimal(str(item["cost"])),
+                sell_price=Decimal(str(item["sell"])),
+                quantity=0,
+                min_quantity=int(str(item["min"])),
+                description=str(item.get("description", "")),
+                is_active=bool(item.get("active", True)),
+            ),
+        )
+        logger.info("created  product %s", sku)
+    db.commit()
+
+
+def ensure_settings(db: Session) -> None:
+    """Fills in settings that were never saved; values an admin changed are kept."""
+    missing = {k: v for k, v in demo_data.SETTINGS.items() if k not in settings_repository.get_all(db)}
+    settings_repository.upsert(db, missing)
+    db.commit()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--demo", action="store_true", help="also create the demo accounts")
+    parser.add_argument("--demo", action="store_true", help="also create demo users, catalog and settings")
     args = parser.parse_args()
 
     settings = get_settings()
@@ -79,6 +125,8 @@ def main() -> int:
         if args.demo:
             for name, email, role in DEMO_USERS:
                 ensure_user(db, auth_admin, name=name, email=email, password=DEMO_PASSWORD, role=role)
+            ensure_settings(db)
+            ensure_catalog(db)
     return 0
 
 
