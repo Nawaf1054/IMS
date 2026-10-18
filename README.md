@@ -47,7 +47,7 @@ The UI runs against an in-browser mock of the API (see [docs/architecture.md](do
 
 ### Full stack (backend + Supabase)
 
-Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: health check, sign-in, `/auth/me` and user management (M1–M2). Other screens still need the mock until their milestones land.
+Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products and settings (M1–M3). Stock, invoices, exports, dashboard and the assistant still need the mock until their milestones land. Seeded products start at quantity 0 until M4 adds stock movements.
 
 1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
    ```bash
@@ -60,7 +60,7 @@ Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: hea
    cd backend
    uv sync
    uv run alembic upgrade head
-   uv run python -m scripts.seed --demo   # admin from .env + the demo accounts above
+   uv run python -m scripts.seed --demo   # admin from .env + demo accounts, catalog and settings
    uv run uvicorn app.main:app --reload   # http://localhost:8000/api/docs
    ```
 4. **Frontend:** `cd frontend && npm run dev`, then sign in with a seeded account.

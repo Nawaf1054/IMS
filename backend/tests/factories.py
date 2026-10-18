@@ -3,6 +3,7 @@
 import itertools
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 from typing import Any
 
 import jwt
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.common.time import utcnow
 from app.core.config import get_settings
 from app.modules.auth.supabase_admin import AuthAdminError
+from app.modules.categories.models import Category
+from app.modules.products.models import Product
 from app.modules.users.models import Profile, Role
 
 _counter = itertools.count(1)
@@ -59,6 +62,42 @@ def create_profile(
     # Commit = release this test's savepoint, so later rollbacks inside a request keep it.
     db.commit()
     return profile
+
+
+def create_category(db: Session, *, name: str | None = None, parent: Category | None = None) -> Category:
+    category = Category(name=name or f"Category {next(_counter)}", parent_id=parent.id if parent else None)
+    db.add(category)
+    db.commit()
+    return category
+
+
+def create_product(
+    db: Session,
+    *,
+    category: Category | None = None,
+    name: str | None = None,
+    sku: str | None = None,
+    cost_price: str = "10.00",
+    sell_price: str = "15.00",
+    quantity: int = 0,
+    min_quantity: int = 0,
+    is_active: bool = True,
+) -> Product:
+    n = next(_counter)
+    product = Product(
+        name=name or f"Product {n}",
+        sku=(sku or f"SKU-{n:04d}").upper(),
+        category_id=(category or create_category(db)).id,
+        cost_price=Decimal(cost_price),
+        sell_price=Decimal(sell_price),
+        # Tests may set quantity directly; the API never does (PRD-4).
+        quantity=quantity,
+        min_quantity=min_quantity,
+        is_active=is_active,
+    )
+    db.add(product)
+    db.commit()
+    return product
 
 
 class FakeAuthAdmin:

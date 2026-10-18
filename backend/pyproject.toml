@@ -36,7 +36,9 @@ ignore = [
     "B008",    # FastAPI's Depends()/Query() in argument defaults is the intended pattern
     "E501",    # line length is the formatter's job
     "N818",    # NotFound/Conflict/… read better than NotFoundError
-    "RUF001",  # user-facing messages use typographic apostrophes (’), matching the frontend
+    "RUF001",  # user-facing text uses typographic characters (’ “ ” ›), matching the frontend
+    "RUF002",
+    "RUF003",
 ]
 
 [tool.ruff.lint.isort]
