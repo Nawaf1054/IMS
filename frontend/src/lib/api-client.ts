@@ -1,27 +1,12 @@
 import { env } from '@/config/env'
-import type { ApiErrorBody } from '@/types/api'
 
-import { authStorage } from './auth-storage'
+import { networkError, toApiError } from './api-error'
+import { authSession } from './auth-session'
+
+export { ApiError, isApiError } from './api-error'
 
 /** Fired when the session can't be refreshed; the auth provider signs the user out. */
 export const AUTH_EXPIRED_EVENT = 'ims:auth-expired'
-
-/** Every failed request surfaces as an ApiError carrying the backend's `{ detail, code }`. */
-export class ApiError extends Error {
-  readonly status: number
-  readonly code: string
-
-  constructor(status: number, body: ApiErrorBody) {
-    super(body.detail)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = body.code
-  }
-}
-
-export function isApiError(error: unknown, code?: string): error is ApiError {
-  return error instanceof ApiError && (code === undefined || error.code === code)
-}
 
 type QueryValue = string | number | boolean | null | undefined
 export type Query = Record<string, QueryValue>
@@ -32,8 +17,6 @@ interface RequestOptions {
   signal?: AbortSignal
 }
 
-const PUBLIC_PATHS = new Set(['/auth/login', '/auth/refresh'])
-
 function buildUrl(path: string, query?: Query): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(query ?? {})) {
@@ -43,47 +26,20 @@ function buildUrl(path: string, query?: Query): string {
   return `${env.apiBaseUrl}${path}${qs ? `?${qs}` : ''}`
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
-  try {
-    const body = (await response.json()) as Partial<ApiErrorBody>
-    return new ApiError(response.status, {
-      detail: body.detail ?? response.statusText,
-      code: body.code ?? 'HTTP_ERROR',
-    })
-  } catch {
-    return new ApiError(response.status, { detail: response.statusText || 'Request failed', code: 'HTTP_ERROR' })
-  }
-}
-
 // One refresh at a time: concurrent 401s wait for the same attempt.
 let refreshInFlight: Promise<boolean> | null = null
 
 function refreshSession(): Promise<boolean> {
-  refreshInFlight ??= (async () => {
-    const refreshToken = authStorage.getRefreshToken()
-    if (!refreshToken) return false
-    try {
-      const response = await fetch(buildUrl('/auth/refresh'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      })
-      if (!response.ok) return false
-      authStorage.setTokens(await response.json())
-      return true
-    } catch {
-      return false
-    } finally {
-      refreshInFlight = null
-    }
-  })()
+  refreshInFlight ??= authSession.refresh().finally(() => {
+    refreshInFlight = null
+  })
   return refreshInFlight
 }
 
 async function send(method: string, path: string, options: RequestOptions = {}, canRetry = true): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
-  const token = authStorage.getAccessToken()
+  const token = await authSession.getAccessToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
   let response: Response
@@ -96,12 +52,12 @@ async function send(method: string, path: string, options: RequestOptions = {}, 
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
-    throw new ApiError(0, { detail: 'Can’t reach the server. Check your connection and try again.', code: 'NETWORK_ERROR' })
+    throw networkError()
   }
 
-  if (response.status === 401 && canRetry && !PUBLIC_PATHS.has(path)) {
+  if (response.status === 401 && canRetry) {
     if (await refreshSession()) return send(method, path, options, false)
-    authStorage.clear()
+    await authSession.signOut()
     window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
   }
 

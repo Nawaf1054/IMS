@@ -1,0 +1,65 @@
+[project]
+name = "ims-backend"
+version = "0.1.0"
+description = "IMS backend: FastAPI + SQLAlchemy + Supabase (Postgres & Auth)"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.6",
+    "pydantic[email]>=2.10",
+    "pyjwt[crypto]>=2.10",
+    "sqlalchemy>=2.0.36",
+    "uvicorn[standard]>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = [
+    "B008",    # FastAPI's Depends()/Query() in argument defaults is the intended pattern
+    "E501",    # line length is the formatter's job
+    "N818",    # NotFound/Conflict/… read better than NotFoundError
+    "RUF001",  # user-facing messages use typographic apostrophes (’), matching the frontend
+]
+
+[tool.ruff.lint.isort]
+# backend/alembic/ holds migrations; the `alembic` import is the library.
+known-third-party = ["alembic"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    "error::DeprecationWarning:app.*",
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true

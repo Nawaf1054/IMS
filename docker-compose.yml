@@ -1,0 +1,43 @@
+# Local development: backend + frontend in containers.
+# Postgres and Auth come from the Supabase CLI stack: run `npx supabase start` first.
+#
+#   docker compose up --build
+#   docker compose run --rm backend alembic upgrade head
+#   docker compose run --rm backend python -m scripts.seed --demo
+
+services:
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    environment:
+      # Inside the container, the Supabase CLI ports on the host are reached via host.docker.internal.
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@host.docker.internal:54322/postgres
+      SUPABASE_URL: http://host.docker.internal:54321
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/scripts:/app/scripts
+
+  frontend:
+    image: node:24-alpine
+    working_dir: /repo/frontend
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    env_file: .env
+    environment:
+      VITE_USE_MOCKS: "false"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/repo/frontend
+      - ./.env:/repo/.env:ro
+      - frontend_node_modules:/repo/frontend/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  frontend_node_modules:
