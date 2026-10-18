@@ -1,0 +1,70 @@
+import { CheckIcon, InfoIcon, Loader2Icon } from "lucide-react"
+import { Toaster as Sonner, type ToasterProps } from "sonner"
+
+import { useTheme } from "@/lib/theme"
+
+function ToastIcon({ tone, children }: { tone: "success" | "danger" | "info"; children: React.ReactNode }) {
+  const tones = {
+    success: "bg-success-soft text-success",
+    danger: "bg-danger-soft text-danger",
+    info: "bg-primary-soft text-primary-soft-foreground",
+  }
+  return (
+    <span className={`flex size-5 items-center justify-center rounded-full ${tones[tone]}`}>{children}</span>
+  )
+}
+
+/** Toasts follow the design: bottom-right card, status icon, 13px title, 12px detail line. */
+const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme } = useTheme()
+
+  return (
+    <Sonner
+      theme={theme}
+      position="bottom-right"
+      className="toaster group"
+      icons={{
+        success: (
+          <ToastIcon tone="success">
+            <CheckIcon className="size-3" strokeWidth={3} />
+          </ToastIcon>
+        ),
+        info: (
+          <ToastIcon tone="info">
+            <InfoIcon className="size-3" strokeWidth={2.5} />
+          </ToastIcon>
+        ),
+        warning: (
+          <ToastIcon tone="danger">
+            <span className="text-[11px] leading-none font-bold">!</span>
+          </ToastIcon>
+        ),
+        error: (
+          <ToastIcon tone="danger">
+            <span className="text-[11px] leading-none font-bold">!</span>
+          </ToastIcon>
+        ),
+        loading: <Loader2Icon className="size-4 animate-spin" />,
+      }}
+      style={
+        {
+          "--normal-bg": "var(--card)",
+          "--normal-text": "var(--foreground)",
+          "--normal-border": "var(--border)",
+          "--border-radius": "var(--radius)",
+        } as React.CSSProperties
+      }
+      toastOptions={{
+        classNames: {
+          toast: "cn-toast !items-start !gap-2.5 !px-3.5 !py-3 !shadow-overlay",
+          title: "!text-[13px] !font-semibold",
+          description: "!text-xs !text-muted-foreground",
+          error: "!border-danger-line",
+        },
+      }}
+      {...props}
+    />
+  )
+}
+
+export { Toaster }

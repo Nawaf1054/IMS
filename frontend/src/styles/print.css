@@ -1,0 +1,26 @@
+/*
+ * Print rules (INV-8). The printable invoice route renders an A4 sheet; anything
+ * marked .no-print (toolbars, navigation) is removed from the printed page.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    margin: 0 !important;
+  }
+}

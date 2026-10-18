@@ -1,0 +1,261 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import './print.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * IMS design tokens.
+ * Source: the "IMS — Inventory Management UI" design system board.
+ * shadcn/ui variables are mapped onto the design palette so generated components
+ * pick up the look automatically; IMS-specific tokens are added alongside them.
+ */
+:root {
+  --radius: 0.5rem;
+
+  /* Surfaces & text */
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --subtle: #fafafa;
+  --subtle-foreground: #3f3f46;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --accent: #f4f4f5;
+  --accent-foreground: #09090b;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --input: #e4e4e7;
+
+  /* Brand (indigo, used sparingly) */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eef2ff;
+  --primary-soft-foreground: #4338ca;
+  --ring: #4f46e5;
+
+  /* Status */
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --warning-line: #fcd34d;
+  --destructive: #b91c1c;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --danger-line: #fca5a5;
+  --success: #15803d;
+  --success-soft: #f0fdf4;
+  --success-line: #86efac;
+  --info: #0369a1;
+  --info-soft: #f0f9ff;
+  --info-line: #7dd3fc;
+
+  /* Charts: six-step categorical ramp, used in order */
+  --chart-1: #4f46e5;
+  --chart-2: #0ea5e9;
+  --chart-3: #14b8a6;
+  --chart-4: #f59e0b;
+  --chart-5: #f43f5e;
+  --chart-6: #a1a1aa;
+
+  /* Effects */
+  --skeleton: #efeff1;
+  --overlay: rgb(9 9 11 / 0.4);
+  --shadow-overlay: 0 12px 32px -8px rgb(9 9 11 / 0.18), 0 2px 6px rgb(9 9 11 / 0.06);
+
+  /* Sidebar */
+  --sidebar: #fafafa;
+  --sidebar-foreground: #3f3f46;
+  --sidebar-border: #e4e4e7;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #131316;
+  --card-foreground: #fafafa;
+  --popover: #131316;
+  --popover-foreground: #fafafa;
+  --subtle: #0f0f12;
+  --subtle-foreground: #d4d4d8;
+  --muted: #1c1c20;
+  --muted-foreground: #a1a1aa;
+  --secondary: #1c1c20;
+  --secondary-foreground: #fafafa;
+  --accent: #1c1c20;
+  --accent-foreground: #fafafa;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --input: #27272a;
+
+  --primary: #4f46e5;
+  --primary-hover: #6366f1;
+  --primary-foreground: #ffffff;
+  --primary-soft: rgb(99 102 241 / 0.16);
+  --primary-soft-foreground: #a5b4fc;
+  --ring: #818cf8;
+
+  --warning: #fbbf24;
+  --warning-soft: rgb(245 158 11 / 0.12);
+  --warning-line: rgb(245 158 11 / 0.45);
+  --destructive: #f87171;
+  --danger: #f87171;
+  --danger-soft: rgb(239 68 68 / 0.12);
+  --danger-line: rgb(239 68 68 / 0.45);
+  --success: #4ade80;
+  --success-soft: rgb(34 197 94 / 0.12);
+  --success-line: rgb(34 197 94 / 0.45);
+  --info: #7dd3fc;
+  --info-soft: rgb(14 165 233 / 0.12);
+  --info-line: rgb(14 165 233 / 0.45);
+
+  --chart-1: #818cf8;
+  --chart-2: #38bdf8;
+  --chart-3: #2dd4bf;
+  --chart-4: #fbbf24;
+  --chart-5: #fb7185;
+  --chart-6: #71717a;
+
+  --skeleton: #1f1f23;
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow-overlay: 0 12px 32px -8px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.05);
+
+  --sidebar: #0f0f12;
+  --sidebar-foreground: #d4d4d8;
+  --sidebar-border: #27272a;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Design breakpoints: navigation collapses to a drawer at 860px, wide grids stack at 1180px. */
+  --breakpoint-md: 54rem;
+  --breakpoint-xl: 74rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-subtle: var(--subtle);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
+  --color-destructive: var(--destructive);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --color-skeleton: var(--skeleton);
+  --color-overlay: var(--overlay);
+  --shadow-overlay: var(--shadow-overlay);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 20px;
+    /* All amounts and table columns use tabular figures. */
+    font-variant-numeric: tabular-nums;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Page title 24/32 · 600 */
+  .text-page-title {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* Section heading inside cards: 15px · 600 */
+  .text-section-title {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 600;
+  }
+  /* Uppercase eyebrow label */
+  .text-eyebrow {
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* SKUs and invoice numbers */
+  .text-code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+}
