@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client'
-import type { LoginResponse, User } from '@/types/models'
+import type { User } from '@/types/models'
 
+/** Sign-in itself goes through `authSession` (Supabase Auth, or the mock API). */
 export const authApi = {
-  login: (email: string, password: string) => apiClient.post<LoginResponse>('/auth/login', { email, password }),
   me: () => apiClient.get<User>('/auth/me'),
 }

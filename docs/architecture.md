@@ -96,9 +96,25 @@ Features: `auth`, `dashboard`, `products`, `categories`, `stock`, `invoices`, `a
 - **Role checks in the UI are hints;** the backend enforces them (AUTH-4).
 
 ### Mock API
-Until the backend exists, `VITE_USE_MOCKS=true` (the default) serves every `/api/v1` endpoint from the browser via Mock Service Worker. The mock applies the PRD rules (no negative stock, atomic invoices, cancel → reverse movements, role checks, AI rate limit) so the UI is built against realistic behaviour. Data resets on reload. Set `VITE_USE_MOCKS=false` to talk to the real backend; no feature code changes.
+`VITE_USE_MOCKS=true` (the default) serves every `/api/v1` endpoint from the browser via Mock Service Worker. The mock applies the PRD rules (no negative stock, atomic invoices, cancel → reverse movements, role checks, AI rate limit) so the UI is built against realistic behaviour. Data resets on reload. Set `VITE_USE_MOCKS=false` to talk to the real backend and Supabase Auth; no feature code changes. The mock handlers are the API contract: the backend matches their paths, payloads, error codes and messages.
 
-Endpoints the UI needs beyond the PRD §8 table (to be implemented in the backend): `GET /auth/me`, `GET /invoices/summary`, `GET /invoices/next-number`, `GET /ai/quota`.
+Endpoints the UI needs beyond the PRD §8 table: `GET /auth/me` (done), `GET /invoices/summary`, `GET /invoices/next-number`, `GET /ai/quota`.
+
+## Authentication (Supabase Auth)
+
+```
+Browser ── signInWithPassword / refresh ──► Supabase Auth
+   │  Authorization: Bearer <Supabase access token>
+   ▼
+FastAPI ── verify JWT (JWKS or HS256 secret) ──► profiles row (role, is_active) ──► Postgres
+```
+
+- **Frontend:** `lib/auth-session/` hides where the session comes from: `supabase-session.ts` (supabase-js) or `mock-session.ts` (the mock API's `/auth/login` and `/auth/refresh`), picked by `VITE_USE_MOCKS`. `api-client.ts` asks it for the token and retries once after a refresh on 401. Supabase errors are mapped to the existing codes (`INVALID_CREDENTIALS`, `ACCOUNT_INACTIVE`).
+- **Backend:** `core/security.py` verifies the token (audience `authenticated`, issuer `<SUPABASE_URL>/auth/v1`). `api/deps.py` loads the `profiles` row by `auth_user_id = sub` and rejects missing or inactive profiles (401). `require_admin` returns 403.
+- **Users** (`profiles`): an integer `id` (used by the API and later FKs), `auth_user_id` (Supabase user), name, lower-cased email, role and active flag. There's no FK to `auth.users` because that schema only exists on Supabase. Role and active flag live here, not in Supabase metadata, so changes apply on the next request.
+- **Admin actions** go through `modules/auth/supabase_admin.py` (secret key, server only). Create: Supabase user, then profile; if the profile insert fails, the Supabase user is deleted. Deactivate: `is_active=false` plus a Supabase ban, which stops token refresh. Self sign-up is off (`supabase/config.toml`).
+- **Schema:** Alembic owns it; Supabase migrations are off. Every app table enables row-level security with no policies, so Supabase's public Data API can't read it. The backend connects as the table owner and isn't affected.
+- **Tests and CI** use plain Postgres and sign HS256 tokens with a test secret. Supabase isn't needed.
 
 ## Decisions
 
@@ -110,5 +126,8 @@ Answers to the PRD's open questions (§12) and other choices made along the way.
 | Language / direction | English only (LTR) for v1. Arabic/RTL is deferred. |
 | Default tax rate | `0` (configurable via `DEFAULT_TAX_RATE` and the settings table). |
 | Currency | SAR (configurable via `DEFAULT_CURRENCY` and the settings table). |
-| LLM provider | Not decided yet. |
+| Database & auth | Supabase: hosted Postgres + Supabase Auth. Local dev uses the Supabase CLI stack (`npx supabase start`); CI uses plain Postgres. |
+| Python tooling | uv (`backend/pyproject.toml`, `uv.lock`); ruff for lint and format (instead of black). |
+| Production DB connection | Supabase session pooler (port 5432, IPv4). If the transaction pooler (6543) is ever used, set psycopg `prepare_threshold=None`. |
+| LLM provider | Decide at M8; `ai/client.py` stays an adapter. |
 | Customer management | Not decided yet. |

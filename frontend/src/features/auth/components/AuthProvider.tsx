@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AUTH_EXPIRED_EVENT } from '@/lib/api-client'
-import { authStorage } from '@/lib/auth-storage'
+import { authSession } from '@/lib/auth-session'
 import type { User } from '@/types/models'
 
 import { authApi } from '../api/auth.api'
@@ -12,10 +12,10 @@ import { AuthContext, type AuthStatus } from './auth-context'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [user, setUser] = useState<User | null>(null)
-  const [status, setStatus] = useState<AuthStatus>(() => (authStorage.getAccessToken() ? 'loading' : 'anonymous'))
+  const [status, setStatus] = useState<AuthStatus>(() => (authSession.hasStoredSession() ? 'loading' : 'anonymous'))
 
   const logout = useCallback(() => {
-    authStorage.clear()
+    void authSession.signOut()
     queryClient.clear()
     setUser(null)
     setStatus('anonymous')
@@ -38,11 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout])
 
   const login = useCallback(async (email: string, password: string) => {
-    const response = await authApi.login(email, password)
-    authStorage.setTokens(response)
-    setUser(response.user)
+    await authSession.signIn(email, password)
+    let me: User
+    try {
+      me = await authApi.me()
+    } catch (error) {
+      // Signed in to Supabase but no usable profile here: don't keep a half session.
+      await authSession.signOut()
+      throw error
+    }
+    setUser(me)
     setStatus('authenticated')
-    return response.user
+    return me
   }, [])
 
   const value = useMemo(() => ({ status, user, login, logout }), [status, user, login, logout])

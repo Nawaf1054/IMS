@@ -37,8 +37,8 @@ A web application for small shops and warehouses to manage products, categories,
 |-------|------------|
 | Frontend | React + TypeScript, Vite, TanStack Query, React Router, component library (MUI / Ant Design / shadcn/ui), Recharts |
 | Backend | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic |
-| Database | PostgreSQL |
-| Auth | JWT (access + refresh tokens), bcrypt/argon2 password hashing |
+| Database | PostgreSQL (hosted on Supabase) |
+| Auth | Supabase Auth (email + password; JWT access + refresh tokens). The backend verifies tokens and enforces roles. |
 | Excel | openpyxl (or pandas) |
 | PDF | WeasyPrint (HTML template → PDF) |
 | LLM | External LLM API with tool calling |
@@ -49,7 +49,7 @@ A web application for small shops and warehouses to manage products, categories,
 
 ### 6.1 Authentication
 - **AUTH-1** Users log in with email and password.
-- **AUTH-2** Passwords are stored hashed, never in plain text.
+- **AUTH-2** Passwords are stored hashed, never in plain text (handled by Supabase Auth).
 - **AUTH-3** All endpoints except login require a valid token.
 - **AUTH-4** Role is checked on every protected action (backend enforced, not only hidden in UI).
 - **AUTH-5** Admin can create, edit, deactivate users and assign roles.
@@ -118,7 +118,8 @@ All numbers are computed by the backend using SQL. The LLM never calculates dash
 ## 7. Data Model
 
 ```
-users            (id, name, email UNIQUE, password_hash, role ENUM[admin, staff], is_active, created_at)
+profiles         (id, auth_user_id UUID UNIQUE → Supabase auth.users, name, email UNIQUE, role ENUM[admin, staff],
+                  is_active, last_active_at, created_at)   -- credentials live in Supabase Auth
 categories       (id, name UNIQUE, parent_id FK→categories NULL, created_at)
 products         (id, name, sku UNIQUE, category_id FK, cost_price NUMERIC(12,2), sell_price NUMERIC(12,2),
                   quantity INT ≥ 0, min_quantity INT ≥ 0, description, is_active, created_at, updated_at)
@@ -141,7 +142,8 @@ Prefix: `/api/v1`
 
 | Method | Path | Role |
 |--------|------|------|
-| POST | `/auth/login`, `/auth/refresh` | Public |
+| — | Sign-in / refresh: Supabase Auth (not this API) | Public |
+| GET | `/auth/me` | All |
 | GET/POST | `/users` · PATCH `/users/{id}` | Admin |
 | GET/POST | `/categories` · PATCH/DELETE `/categories/{id}` | Read: all · Write: Admin |
 | GET/POST | `/products` · GET/PATCH/DELETE `/products/{id}` | Read: all · Write: Admin |
@@ -178,8 +180,8 @@ UI requirements: responsive layout, sidebar navigation, loading and empty states
 - **Performance:** paginated lists (default 20, max 100); dashboard queries < 1s on 10k products / 100k movements.
 - **Reliability:** all stock-changing operations are transactional.
 - **Testing:** backend coverage ≥ 70%, required tests for invoice transaction, stock rules, and permissions.
-- **Code quality:** linting (ruff, ESLint), formatting (black, Prettier), type hints, CI runs lint + tests on every push.
-- **Deployment:** `docker-compose up` runs frontend, backend, and database locally. Seed script creates an admin user and sample data.
+- **Code quality:** linting (ruff, ESLint), formatting (ruff format, Prettier), type hints, CI runs lint + tests on every push.
+- **Deployment:** `npx supabase start` runs the database and auth locally; `docker compose up` runs frontend and backend. Seed script creates an admin user and sample data.
 
 ## 11. Milestones
 
@@ -201,5 +203,5 @@ Build in order. Do not start M8 before M7 is complete.
 
 - Currency and tax rate defaults for the target market?
 - Should the UI support Arabic (RTL) in addition to English?
-- Which LLM provider to use?
+- Which LLM provider to use? (decide at M8)
 - Is customer management (saved customers, customer history) needed in v1 or later?

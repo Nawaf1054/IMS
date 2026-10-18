@@ -6,7 +6,7 @@ A web application for small shops and warehouses to manage products, categories,
 |----------|-------|
 | Frontend | React + TypeScript, Vite, shadcn/ui + Tailwind CSS, TanStack Query, React Router, Recharts |
 | Backend  | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic |
-| Database | PostgreSQL |
+| Database & Auth | Supabase (PostgreSQL + Supabase Auth) |
 | DevOps   | Docker, docker-compose, GitHub Actions |
 
 ## Repository layout
@@ -15,6 +15,7 @@ A web application for small shops and warehouses to manage products, categories,
 IMS/
 ├── backend/     FastAPI service (feature modules under app/modules)
 ├── frontend/    React SPA (feature folders under src/features)
+├── supabase/    Supabase CLI config for the local stack (Postgres + Auth)
 ├── docs/        PRD and architecture notes
 └── .github/     CI workflows
 ```
@@ -44,9 +45,33 @@ The UI runs against an in-browser mock of the API (see [docs/architecture.md](do
 | `npm run test` | Vitest (unit tests + app smoke test) |
 | `npm run lint` / `npm run format` | ESLint / Prettier |
 
-### Full stack
+### Full stack (backend + Supabase)
 
-> Backend, database and Docker setup arrive with the backend milestones (M1–M2).
+Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: health check, sign-in, `/auth/me` and user management (M1–M2). Other screens still need the mock until their milestones land.
 
-1. Copy `.env.example` to `.env` and fill in the values.
-2. `docker-compose up`
+1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
+   ```bash
+   npx supabase start      # prints API URL, DB URL, publishable/secret keys and JWT secret
+   npx supabase status     # shows them again
+   ```
+2. **Configure:** copy `.env.example` to `.env`. Fill in `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SEED_ADMIN_PASSWORD`, then set `VITE_USE_MOCKS=false`.
+3. **Backend:**
+   ```bash
+   cd backend
+   uv sync
+   uv run alembic upgrade head
+   uv run python -m scripts.seed --demo   # admin from .env + the demo accounts above
+   uv run uvicorn app.main:app --reload   # http://localhost:8000/api/docs
+   ```
+4. **Frontend:** `cd frontend && npm run dev`, then sign in with a seeded account.
+
+Or run steps 3–4 in containers: `docker compose up --build` (Supabase still runs via `npx supabase start`).
+
+| Backend command | Does |
+|-----------------|------|
+| `uv run pytest --cov` | Tests (needs a Postgres; uses `<db>_test` on the `DATABASE_URL` server) |
+| `uv run ruff check . && uv run ruff format .` | Lint / format |
+| `uv run mypy app scripts` | Type check |
+| `uv run alembic revision --autogenerate -m "..."` | New migration |
+
+Supabase Studio (local DB browser) runs at http://127.0.0.1:54323.

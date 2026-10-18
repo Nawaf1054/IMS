@@ -12,4 +12,5 @@ export const STORAGE_KEYS = {
   sidebarCollapsed: 'ims.sidebar-collapsed',
   accessToken: 'ims.access-token',
   refreshToken: 'ims.refresh-token',
+  supabaseSession: 'ims.supabase-session',
 } as const
