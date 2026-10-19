@@ -3,7 +3,9 @@
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> repository root (one .env shared with docker-compose and Vite)
@@ -32,6 +34,8 @@ class Settings(BaseSettings):
     # Business defaults
     default_tax_rate: Decimal = Decimal("0")
     default_currency: str = "SAR"
+    # IANA zone that defines the business day for date filters ("today", "2026-10-19").
+    business_timezone: str = "Asia/Riyadh"
 
     # AI assistant
     llm_api_key: str = ""
@@ -42,6 +46,19 @@ class Settings(BaseSettings):
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = ""
     seed_admin_name: str = "Admin"
+
+    @field_validator("business_timezone")
+    @classmethod
+    def _known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError(f"Unknown time zone: {value}") from exc
+        return value
+
+    @property
+    def business_tz(self) -> ZoneInfo:
+        return ZoneInfo(self.business_timezone)
 
     @property
     def cors_origin_list(self) -> list[str]:

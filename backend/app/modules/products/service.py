@@ -49,18 +49,30 @@ def to_out(product: Product, invoice_count: int = 0) -> ProductOut:
 
 def _detail(db: Session, product: Product) -> ProductDetailOut:
     base = to_out(product, invoice_counts(db, [product.id]).get(product.id, 0))
-    # Sales come from invoices (M5) and receipts from stock movements (M4).
+    # Sales come from invoices (M5).
     return ProductDetailOut(
         **base.model_dump(),
         sales_last_30_days=SalesSummary(quantity=0, revenue=Decimal("0"), invoice_count=0, cancelled_count=0),
-        last_received_at=None,
+        last_received_at=repository.last_received_at(db, product.id),
     )
+
+
+def _not_found() -> NotFound:
+    return NotFound("Product not found.", code="PRODUCT_NOT_FOUND")
 
 
 def get(db: Session, product_id: int) -> Product:
     product = repository.get(db, product_id)
     if product is None:
-        raise NotFound("Product not found.", code="PRODUCT_NOT_FOUND")
+        raise _not_found()
+    return product
+
+
+def get_for_update(db: Session, product_id: int) -> Product:
+    """The product, with its row locked until commit. Only the stock service changes quantity."""
+    product = repository.get_for_update(db, product_id)
+    if product is None:
+        raise _not_found()
     return product
 
 

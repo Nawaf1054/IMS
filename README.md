@@ -47,7 +47,7 @@ The UI runs against an in-browser mock of the API (see [docs/architecture.md](do
 
 ### Full stack (backend + Supabase)
 
-Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products and settings (M1–M3). Stock, invoices, exports, dashboard and the assistant still need the mock until their milestones land. Seeded products start at quantity 0 until M4 adds stock movements.
+Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products, settings and stock movements (M1–M4). Invoices, exports, dashboard and the assistant still need the mock until their milestones land. The demo seed records an "Opening stock" movement for each product, so quantities match the design.
 
 1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
    ```bash
