@@ -1,11 +1,14 @@
 """Database queries for products (SQLAlchemy, no business logic)."""
 
+from datetime import datetime
+
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from app.modules.categories.models import Category
 from app.modules.products.models import Product
 from app.modules.products.schemas import ProductFilters
+from app.modules.stock.models import MovementType, StockMovement
 
 
 def _escape_like(text: str) -> str:
@@ -48,6 +51,28 @@ def list_query(filters: ProductFilters) -> Select[Product]:
 
 def get(db: Session, product_id: int) -> Product | None:
     return db.get(Product, product_id)
+
+
+def get_for_update(db: Session, product_id: int) -> Product | None:
+    """Loads the product and locks its row until the transaction ends (stock changes, STK-3)."""
+    stmt = (
+        select(Product)
+        .where(Product.id == product_id)
+        # OF products: the joined category rows are on the nullable side of an outer join.
+        .with_for_update(of=Product)
+        # Read the quantity committed by whoever held the lock before us, not a cached copy.
+        .execution_options(populate_existing=True)
+    )
+    return db.scalar(stmt)
+
+
+def last_received_at(db: Session, product_id: int) -> datetime | None:
+    """When stock was last received with an IN movement."""
+    return db.scalar(
+        select(func.max(StockMovement.created_at)).where(
+            StockMovement.product_id == product_id, StockMovement.type == MovementType.IN
+        )
+    )
 
 
 def get_by_sku(db: Session, sku: str) -> Product | None:

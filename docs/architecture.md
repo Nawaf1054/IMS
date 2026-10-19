@@ -132,5 +132,9 @@ Answers to the PRD's open questions (§12) and other choices made along the way.
 | LLM provider | Decide at M8; `ai/client.py` stays an adapter. |
 | Customer management | Not decided yet. |
 | Category nesting | One level (CAT-2). A category that has subcategories can't be moved under another one (`NESTING_TOO_DEEP`); the mock doesn't check this. |
-| Demo stock | Seeded products start at quantity 0. Stock only changes through movements (PRD-4), so M4 seeds opening-stock movements. |
+| Demo stock | Products are created at quantity 0; `seed --demo` then records one "Opening stock" IN movement per product (`demo_data.OPENING_STOCK`), so quantities match the design and PRD-4 holds. |
+| Stock concurrency | `stock.service.apply()` is the only code that changes `Product.quantity`. Callers lock the product row first (`products_service.get_for_update`, `SELECT … FOR UPDATE`), so concurrent movements queue instead of overselling. Movements are stamped with `clock_timestamp()`, so time order matches balance order. A `CHECK (quantity >= 0)` backs it up. |
+| Movement quantities | `stock_movements.quantity` is the signed change and `balance_after` the resulting quantity. For ADJUSTMENT the API takes the counted quantity and stores the difference. |
+| Date filters | `start_date` / `end_date` are inclusive days in `BUSINESS_TIMEZONE` (default `Asia/Riyadh`). They become UTC bounds before querying, so the `created_at` indexes still apply. |
+| Deleting products | A product that was never invoiced is hard-deleted along with its movement history (`ON DELETE CASCADE`), as in the mock. Invoiced products are only deactivated (PRD-2). |
 | Business settings | `settings` key/value table over defaults from the environment (`DEFAULT_CURRENCY`, `DEFAULT_TAX_RATE`, business name "My Business"). |

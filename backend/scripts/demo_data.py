@@ -13,8 +13,8 @@ CATEGORIES: list[tuple[str, str | None]] = [
     ("Garden", None),
 ]
 
-# Quantities are not seeded here: stock only changes through movements (PRD-4).
-# M4 seeds opening-stock movements that bring each product to the design's quantity.
+# Quantities are not set here: stock only changes through movements (PRD-4).
+# The seed records an "Opening stock" IN movement for each entry in OPENING_STOCK.
 PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Portland cement 50kg bag",
@@ -184,6 +184,28 @@ PRODUCTS: list[dict[str, object]] = [
         "active": False,
     },
 ]
+
+# Quantity on hand per SKU, as in the UI design. Products not listed start empty.
+OPENING_STOCK: dict[str, int] = {
+    "BM-CEM-050": 420,
+    "BM-RBR-012": 85,
+    "PL-PVC-104": 64,
+    "BM-TIL-6060": 18,
+    "PT-WAL-018": 22,
+    "TL-PWR-D18": 4,
+    "TL-HND-DB19": 37,
+    "EL-CBL-25": 12,
+    "SF-HLM-001": 140,
+    "PL-VLV-001": 3,
+    "BM-BLK-2040": 2600,
+    "BM-GYP-125": 156,
+    "BM-ADH-020": 74,
+    "PL-ELB-104": 310,
+    "EL-BRK-032": 48,
+    "EL-LED-6040": 33,
+    "PT-ROL-009": 61,
+    "SF-GLV-010": 230,
+}
 
 SETTINGS = {
     "business_name": "Al Noor Building Supplies",

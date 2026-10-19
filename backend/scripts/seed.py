@@ -1,10 +1,11 @@
 """Creates the admin user; with --demo, also the demo accounts, catalog and business settings.
 
 Safe to run repeatedly: existing users, categories (by name) and products (by SKU) are left
-alone, and a Supabase user that already exists without a profile is linked, not recreated.
+alone, opening stock is only recorded for products with no movements yet, and a Supabase user
+that already exists without a profile is linked, not recreated.
 
     uv run python -m scripts.seed           # admin from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD
-    uv run python -m scripts.seed --demo    # + demo users (password demo1234), catalog, settings
+    uv run python -m scripts.seed --demo    # + demo users (password demo1234), catalog, stock, settings
 """
 
 import argparse
@@ -22,11 +23,14 @@ from app.modules.auth.supabase_admin import AuthAdmin, AuthAdminError, get_auth_
 from app.modules.categories import repository as categories_repository
 from app.modules.categories.models import Category
 from app.modules.products import repository as products_repository
+from app.modules.products import service as products_service
 from app.modules.products.models import Product
 from app.modules.settings import repository as settings_repository
+from app.modules.stock import service as stock_service
+from app.modules.stock.models import MovementType
 from app.modules.users import repository
 from app.modules.users import service as users_service
-from app.modules.users.models import Role
+from app.modules.users.models import Profile, Role
 from scripts import demo_data
 
 logger = logging.getLogger("seed")
@@ -41,11 +45,12 @@ DEMO_USERS = [
 
 def ensure_user(
     db: Session, auth_admin: AuthAdmin, *, name: str, email: str, password: str, role: Role
-) -> None:
+) -> Profile:
     email = email.lower()
-    if repository.get_by_email(db, email):
+    existing = repository.get_by_email(db, email)
+    if existing:
         logger.info("exists   %s", email)
-        return
+        return existing
     auth_user_id: uuid.UUID | None
     try:
         auth_user_id = auth_admin.create_user(email, password)
@@ -55,9 +60,10 @@ def ensure_user(
         auth_user_id = auth_admin.find_user_id_by_email(email)
         if auth_user_id is None:
             raise
-    users_service.create_profile(db, auth_user_id=auth_user_id, name=name, email=email, role=role)
+    profile = users_service.create_profile(db, auth_user_id=auth_user_id, name=name, email=email, role=role)
     db.commit()
     logger.info("created  %s (%s)", email, role.value)
+    return profile
 
 
 def ensure_catalog(db: Session) -> None:
@@ -92,6 +98,18 @@ def ensure_catalog(db: Session) -> None:
     db.commit()
 
 
+def ensure_opening_stock(db: Session, user: Profile) -> None:
+    """Records an "Opening stock" IN movement for demo products that have no history yet."""
+    for sku, quantity in demo_data.OPENING_STOCK.items():
+        product = products_repository.get_by_sku(db, sku)
+        if product is None or stock_service.has_movements(db, product.id):
+            continue
+        locked = products_service.get_for_update(db, product.id)
+        stock_service.apply(db, locked, MovementType.IN, quantity, note="Opening stock", user=user)
+        logger.info("stocked  %s (%d)", sku, quantity)
+    db.commit()
+
+
 def ensure_settings(db: Session) -> None:
     """Fills in settings that were never saved; values an admin changed are kept."""
     missing = {k: v for k, v in demo_data.SETTINGS.items() if k not in settings_repository.get_all(db)}
@@ -114,7 +132,7 @@ def main() -> int:
 
     auth_admin = get_auth_admin()
     with SessionLocal() as db:
-        ensure_user(
+        admin = ensure_user(
             db,
             auth_admin,
             name=settings.seed_admin_name,
@@ -127,6 +145,7 @@ def main() -> int:
                 ensure_user(db, auth_admin, name=name, email=email, password=DEMO_PASSWORD, role=role)
             ensure_settings(db)
             ensure_catalog(db)
+            ensure_opening_stock(db, admin)
     return 0
 
 

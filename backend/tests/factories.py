@@ -2,7 +2,7 @@
 
 import itertools
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.modules.auth.supabase_admin import AuthAdminError
 from app.modules.categories.models import Category
 from app.modules.products.models import Product
+from app.modules.stock.models import MovementType, StockMovement
 from app.modules.users.models import Profile, Role
 
 _counter = itertools.count(1)
@@ -98,6 +99,33 @@ def create_product(
     db.add(product)
     db.commit()
     return product
+
+
+def create_movement(
+    db: Session,
+    product: Product,
+    user: Profile,
+    *,
+    type: MovementType = MovementType.IN,
+    quantity: int = 1,
+    note: str = "",
+    created_at: datetime | None = None,
+) -> StockMovement:
+    """A movement with a chosen timestamp; keeps the product's quantity and balance in step."""
+    product.quantity += quantity
+    movement = StockMovement(
+        product_id=product.id,
+        type=type,
+        quantity=quantity,
+        balance_after=product.quantity,
+        note=note,
+        user_id=user.id,
+    )
+    if created_at is not None:
+        movement.created_at = created_at
+    db.add(movement)
+    db.commit()
+    return movement
 
 
 class FakeAuthAdmin:
