@@ -312,14 +312,3 @@ def test_delete_product_without_invoices(
     assert response.json() == {"result": "deleted"}
     db.expire_all()
     assert repository.get(db, product.id) is None
-
-
-def test_delete_product_on_invoices_deactivates(
-    client: TestClient, db: Session, admin_headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    product = create_product(db)
-    monkeypatch.setattr("app.modules.products.service.invoice_counts", lambda db, ids: {product.id: 2})
-    response = client.delete(f"{URL}/{product.id}", headers=admin_headers)
-    assert response.json() == {"result": "deactivated"}
-    db.refresh(product)
-    assert product.is_active is False

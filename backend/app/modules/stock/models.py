@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import IdMixin
+from app.modules.invoices.models import Invoice
 from app.modules.products.models import Product
 from app.modules.users.models import Profile
 
@@ -40,6 +41,10 @@ class StockMovement(IdMixin, Base):
     balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
     note: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     user_id: Mapped[int] = mapped_column(ForeignKey("profiles.id", ondelete="RESTRICT"), nullable=False)
+    # Set on SALE movements and on the IN movements that reverse a cancelled invoice.
+    invoice_id: Mapped[int | None] = mapped_column(
+        ForeignKey("invoices.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     # clock_timestamp(), not now(): a movement that waited for the product lock is stamped when it's
     # written, so time order matches balance order. now() would be the transaction's start time.
     created_at: Mapped[datetime] = mapped_column(
@@ -48,3 +53,4 @@ class StockMovement(IdMixin, Base):
 
     product: Mapped[Product] = relationship(lazy="joined", innerjoin=True)
     user: Mapped[Profile] = relationship(lazy="joined", innerjoin=True)
+    invoice: Mapped[Invoice | None] = relationship(lazy="joined")

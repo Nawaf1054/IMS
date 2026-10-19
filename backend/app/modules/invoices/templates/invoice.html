@@ -1,1 +1,135 @@
-<!-- Printable invoice template rendered to PDF by invoices/pdf.py (INV-8). -->
+<!doctype html>
+<!-- Printable tax invoice rendered to PDF by invoices/pdf.py (INV-8). Mirrors the frontend's InvoiceDocument. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ invoice.invoice_number }}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Inter", "Helvetica Neue", Arial, "DejaVu Sans", sans-serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #111111;
+    background: #ffffff;
+  }
+  .sheet { position: relative; width: 210mm; height: 297mm; padding: 17mm 17mm 15mm; display: flex; flex-direction: column; }
+  .mono { font-family: "DejaVu Sans Mono", "Courier New", monospace; }
+  .muted { color: #555555; }
+
+  header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 2px solid #111111; }
+  .business-name { font-size: 18pt; font-weight: 700; line-height: 1.25; }
+  .business-address { font-size: 10.5pt; color: #444444; white-space: pre-line; }
+  .doc-title { text-align: right; }
+  .doc-kind { font-size: 9.75pt; font-weight: 600; letter-spacing: 0.12em; color: #444444; }
+  .doc-number { font-size: 15pt; font-weight: 500; }
+
+  .meta { display: flex; gap: 24px; margin-top: 24px; }
+  .meta > div { flex: 1; }
+  .label { font-size: 9pt; font-weight: 600; letter-spacing: 0.08em; color: #555555; }
+  .strong { font-weight: 600; }
+
+  table { width: 100%; margin-top: 24px; border-collapse: collapse; font-size: 11.25pt; }
+  th { padding-bottom: 6px; border-bottom: 1.5px solid #111111; font-size: 9pt; font-weight: 600; letter-spacing: 0.06em; color: #333333; text-align: left; }
+  td { padding: 9px 0; border-bottom: 1px solid #bbbbbb; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; padding-left: 12px; }
+  .item-name { font-weight: 500; }
+  .item-sku { font-size: 9pt; line-height: 1.3; }
+
+  .totals { width: 300px; white-space: nowrap; margin: 24px 0 0 auto; font-size: 11.25pt; }
+  .totals div { display: flex; justify-content: space-between; padding: 2px 0; }
+  .totals .grand { margin-top: 6px; padding-top: 8px; border-top: 2px solid #111111; font-weight: 700; align-items: baseline; }
+  .totals .grand span:last-child { font-size: 16.5pt; }
+
+  .spacer { flex: 1; }
+  footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-top: 12px; border-top: 1px solid #bbbbbb; font-size: 9pt; line-height: 1.5; color: #555555; }
+
+  .stamp {
+    position: absolute; top: 112mm; left: 50%; transform: translateX(-50%) rotate(-24deg);
+    padding: 6px 24px; border: 6px solid rgba(185, 28, 28, 0.35); border-radius: 12px;
+    font-size: 60pt; font-weight: 700; letter-spacing: 0.08em; line-height: 1; color: rgba(185, 28, 28, 0.35);
+  }
+</style>
+</head>
+<body>
+<article class="sheet">
+  {% if invoice.status == "CANCELLED" %}
+  <div class="stamp" aria-hidden="true">CANCELLED</div>
+  {% endif %}
+
+  <header>
+    <div>
+      <div class="business-name">{{ business.business_name }}</div>
+      <div class="business-address">{{ business.business_address }}</div>
+    </div>
+    <div class="doc-title">
+      <div class="doc-kind">TAX INVOICE</div>
+      <div class="doc-number mono">{{ invoice.invoice_number }}</div>
+    </div>
+  </header>
+
+  <section class="meta">
+    <div>
+      <div class="label">BILL TO</div>
+      <div class="strong">{{ customer }}</div>
+    </div>
+    <div>
+      <div class="label">INVOICE DATE</div>
+      <div>{{ created }}</div>
+    </div>
+    <div>
+      <div class="label">SERVED BY</div>
+      <div>{{ invoice.user_name }}</div>
+    </div>
+  </section>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 24px">#</th>
+        <th>ITEM</th>
+        <th class="num" style="width: 56px">QTY</th>
+        <th class="num" style="width: 124px">UNIT PRICE</th>
+        <th class="num" style="width: 132px">AMOUNT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in invoice.items %}
+      <tr>
+        <td class="muted">{{ loop.index }}</td>
+        <td>
+          <div class="item-name">{{ item.product_name }}</div>
+          <div class="item-sku mono muted">{{ item.product_sku }}</div>
+        </td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">{{ money(item.unit_price) }}</td>
+        <td class="num item-name">{{ money(item.line_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <section class="totals">
+    <div><span>Subtotal</span><span>{{ money(invoice.subtotal) }}</span></div>
+    {% if invoice.discount > 0 %}
+    <div><span>Discount</span><span>− {{ money(invoice.discount) }}</span></div>
+    <div><span>Taxable amount</span><span>{{ money(taxable) }}</span></div>
+    {% endif %}
+    <div><span>VAT {{ rate }}</span><span>{{ money(invoice.tax_amount) }}</span></div>
+    <div class="grand"><span>Total due</span><span>{{ money(invoice.total) }}</span></div>
+  </section>
+
+  <div class="spacer"></div>
+
+  <footer>
+    <div>
+      <div>All amounts in {{ business.currency }}. VAT charged at {{ rate }}.</div>
+      <div>Thank you for your business.</div>
+    </div>
+    <div>Printed {{ printed }}</div>
+  </footer>
+</article>
+</body>
+</html>

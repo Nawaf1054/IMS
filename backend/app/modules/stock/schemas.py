@@ -19,7 +19,7 @@ class MovementOut(BaseModel):
     quantity: int
     balance_after: int
     note: str
-    # Set on SALE movements and invoice reversals (M5).
+    # Set on SALE movements and on the reversals of a cancelled invoice.
     invoice_id: int | None
     invoice_number: str | None
     user_id: int

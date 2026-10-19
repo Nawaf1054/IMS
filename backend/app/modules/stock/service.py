@@ -1,8 +1,8 @@
 """Stock rules (STK-1 … STK-6): every quantity change is an immutable movement, written in the same
 transaction as the new quantity, and stock never goes below zero.
 
-`apply()` is the only code that changes `Product.quantity`. Invoices (M5) call it for SALE movements
-and cancellations inside their own transaction.
+`apply()` is the only code that changes `Product.quantity`. Invoices call it for SALE movements and
+for the IN movements that reverse a cancellation, inside their own transaction.
 """
 
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from app.common.pagination import Page, PageParams, paginate
 from app.common.time import local_day_bounds
 from app.core.config import get_settings
 from app.core.exceptions import Conflict, ValidationFailed
+from app.modules.invoices.models import Invoice
 from app.modules.products import service as products_service
 from app.modules.products.models import Product
 from app.modules.stock import repository
@@ -32,8 +33,8 @@ def to_out(movement: StockMovement) -> MovementOut:
         quantity=movement.quantity,
         balance_after=movement.balance_after,
         note=movement.note,
-        invoice_id=None,
-        invoice_number=None,
+        invoice_id=movement.invoice_id,
+        invoice_number=movement.invoice.invoice_number if movement.invoice else None,
         user_id=movement.user_id,
         user_name=movement.user.name,
         created_at=movement.created_at,
@@ -41,7 +42,14 @@ def to_out(movement: StockMovement) -> MovementOut:
 
 
 def apply(
-    db: Session, product: Product, type: MovementType, delta: int, *, note: str, user: Profile
+    db: Session,
+    product: Product,
+    type: MovementType,
+    delta: int,
+    *,
+    note: str,
+    user: Profile,
+    invoice: Invoice | None = None,
 ) -> StockMovement:
     """Changes the product's quantity by `delta` and records the movement. Doesn't commit.
 
@@ -70,6 +78,7 @@ def apply(
             user_id=user.id,
             product=product,
             user=user,
+            invoice=invoice,
         ),
     )
 
@@ -132,6 +141,11 @@ def list_product_movements(
     """One product's history, newest first (STK-5)."""
     products_service.get(db, product_id)
     return _page(db, filters, params, product_id)
+
+
+def invoice_movements(db: Session, invoice_id: int) -> list[MovementOut]:
+    """An invoice's SALE movements, then its reversals if it was cancelled."""
+    return [to_out(m) for m in repository.for_invoice(db, invoice_id)]
 
 
 def has_movements(db: Session, product_id: int) -> bool:

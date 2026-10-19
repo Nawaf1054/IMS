@@ -47,7 +47,7 @@ The UI runs against an in-browser mock of the API (see [docs/architecture.md](do
 
 ### Full stack (backend + Supabase)
 
-Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products, settings and stock movements (M1–M4). Invoices, exports, dashboard and the assistant still need the mock until their milestones land. The demo seed records an "Opening stock" movement for each product, so quantities match the design.
+Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products, settings, stock movements and invoices (M1–M5). Exports, dashboard and the assistant still need the mock until their milestones land. Invoice PDFs use WeasyPrint, which needs the Pango system library: the Docker image includes it, but on Windows without it the PDF endpoint answers `PDF_UNAVAILABLE` (printing from the browser still works). The demo seed records an "Opening stock" movement for each product, so quantities match the design.
 
 1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
    ```bash

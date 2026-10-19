@@ -34,5 +34,10 @@ def add(db: Session, movement: StockMovement) -> StockMovement:
     return movement
 
 
+def for_invoice(db: Session, invoice_id: int) -> list[StockMovement]:
+    stmt = select(StockMovement).where(StockMovement.invoice_id == invoice_id).order_by(StockMovement.id)
+    return list(db.scalars(stmt))
+
+
 def exists_for_product(db: Session, product_id: int) -> bool:
     return bool(db.scalar(select(exists().where(StockMovement.product_id == product_id))))

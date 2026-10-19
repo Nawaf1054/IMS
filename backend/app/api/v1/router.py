@@ -6,6 +6,7 @@ from sqlalchemy import text
 from app.api.deps import DbSession
 from app.modules.auth.router import router as auth_router
 from app.modules.categories.router import router as categories_router
+from app.modules.invoices.router import router as invoices_router
 from app.modules.products.router import router as products_router
 from app.modules.settings.router import router as settings_router
 from app.modules.stock.router import router as stock_router
@@ -25,4 +26,5 @@ api_router.include_router(users_router)
 api_router.include_router(categories_router)
 api_router.include_router(products_router)
 api_router.include_router(stock_router)
+api_router.include_router(invoices_router)
 api_router.include_router(settings_router)
