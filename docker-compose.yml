@@ -14,6 +14,8 @@ services:
       # Inside the container, the Supabase CLI ports on the host are reached via host.docker.internal.
       DATABASE_URL: postgresql+psycopg://postgres:postgres@host.docker.internal:54322/postgres
       SUPABASE_URL: http://host.docker.internal:54321
+      # Tokens still name the host address as their issuer.
+      SUPABASE_JWT_ISSUER: http://127.0.0.1:54321/auth/v1
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

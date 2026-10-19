@@ -23,10 +23,11 @@ class SigningKeySource(Protocol):
 
 class TokenVerifier:
     def __init__(self, settings: Settings, jwks: SigningKeySource | None = None):
-        self._issuer = settings.supabase_auth_url
+        self._issuer = settings.jwt_issuer
         self._hs256_secret = settings.supabase_jwt_secret
+        # Keys are fetched from wherever this server reaches Supabase, which may differ from the issuer.
         self._jwks = jwks or jwt.PyJWKClient(
-            f"{self._issuer}/.well-known/jwks.json", cache_keys=True, lifespan=600
+            f"{settings.supabase_auth_url}/.well-known/jwks.json", cache_keys=True, lifespan=600
         )
 
     def verify(self, token: str) -> dict[str, Any]:

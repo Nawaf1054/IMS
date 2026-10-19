@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     supabase_secret_key: str = ""
     # Only needed to verify HS256-signed tokens (legacy JWT secret, local CLI, tests).
     supabase_jwt_secret: str = ""
+    # The `iss` Supabase puts in tokens, if it differs from `<supabase_url>/auth/v1`. In docker-compose
+    # the backend reaches Supabase at host.docker.internal while tokens say 127.0.0.1.
+    supabase_jwt_issuer: str = ""
 
     # Business defaults
     default_tax_rate: Decimal = Decimal("0")
@@ -67,6 +70,10 @@ class Settings(BaseSettings):
     @property
     def supabase_auth_url(self) -> str:
         return f"{self.supabase_url.rstrip('/')}/auth/v1"
+
+    @property
+    def jwt_issuer(self) -> str:
+        return self.supabase_jwt_issuer.rstrip("/") or self.supabase_auth_url
 
 
 @lru_cache

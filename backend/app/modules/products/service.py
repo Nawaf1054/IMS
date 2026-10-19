@@ -1,11 +1,12 @@
 """Business rules for products (PRD-1 … PRD-5)."""
 
-from decimal import Decimal
+from datetime import timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.pagination import Page, PageParams, paginate
+from app.common.time import utcnow
 from app.core.exceptions import Conflict, NotFound, ValidationFailed
 from app.modules.categories import service as categories_service
 from app.modules.products import repository
@@ -20,10 +21,12 @@ from app.modules.products.schemas import (
     SalesSummary,
 )
 
+SALES_WINDOW = timedelta(days=30)
+
 
 def invoice_counts(db: Session, product_ids: list[int]) -> dict[int, int]:
-    """Invoices each product appears on. Always empty until the invoices module exists (M5)."""
-    return {}
+    """Invoices (any status) each product appears on."""
+    return repository.invoice_counts(db, product_ids)
 
 
 def to_out(product: Product, invoice_count: int = 0) -> ProductOut:
@@ -49,10 +52,15 @@ def to_out(product: Product, invoice_count: int = 0) -> ProductOut:
 
 def _detail(db: Session, product: Product) -> ProductDetailOut:
     base = to_out(product, invoice_counts(db, [product.id]).get(product.id, 0))
-    # Sales come from invoices (M5).
+    sales = repository.sales_since(db, product.id, utcnow() - SALES_WINDOW)
     return ProductDetailOut(
         **base.model_dump(),
-        sales_last_30_days=SalesSummary(quantity=0, revenue=Decimal("0"), invoice_count=0, cancelled_count=0),
+        sales_last_30_days=SalesSummary(
+            quantity=sales.quantity,
+            revenue=sales.revenue,
+            invoice_count=sales.invoice_count,
+            cancelled_count=sales.cancelled_count,
+        ),
         last_received_at=repository.last_received_at(db, product.id),
     )
 
@@ -74,6 +82,15 @@ def get_for_update(db: Session, product_id: int) -> Product:
     if product is None:
         raise _not_found()
     return product
+
+
+def get_many_for_update(db: Session, product_ids: list[int]) -> dict[int, Product]:
+    """Several products by id, locked until commit (in id order, so concurrent sales can't deadlock).
+    Raises PRODUCT_NOT_FOUND if any is missing."""
+    products = repository.get_many_for_update(db, sorted(set(product_ids)))
+    if len(products) != len(set(product_ids)):
+        raise _not_found()
+    return products
 
 
 def list_products(db: Session, filters: ProductFilters, params: PageParams) -> Page[ProductOut]:

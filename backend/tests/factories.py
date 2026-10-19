@@ -13,6 +13,9 @@ from app.common.time import utcnow
 from app.core.config import get_settings
 from app.modules.auth.supabase_admin import AuthAdminError
 from app.modules.categories.models import Category
+from app.modules.invoices import service as invoices_service
+from app.modules.invoices.models import Invoice
+from app.modules.invoices.schemas import InvoiceCreate, InvoiceLineIn
 from app.modules.products.models import Product
 from app.modules.stock.models import MovementType, StockMovement
 from app.modules.users.models import Profile, Role
@@ -126,6 +129,28 @@ def create_movement(
     db.add(movement)
     db.commit()
     return movement
+
+
+def create_invoice(
+    db: Session,
+    user: Profile,
+    lines: list[tuple[Product, int]],
+    *,
+    customer_name: str | None = None,
+    discount: str = "0",
+    created_at: datetime | None = None,
+) -> Invoice:
+    """An invoice made through the service (stock checked and reduced), optionally backdated."""
+    data = InvoiceCreate(
+        customer_name=customer_name,
+        discount=discount,
+        items=[InvoiceLineIn(product_id=product.id, quantity=quantity) for product, quantity in lines],
+    )
+    invoice = invoices_service.get(db, invoices_service.create_invoice(db, user, data).id)
+    if created_at is not None:
+        invoice.created_at = created_at
+        db.commit()
+    return invoice
 
 
 class FakeAuthAdmin:

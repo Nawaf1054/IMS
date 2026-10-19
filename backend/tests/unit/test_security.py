@@ -75,3 +75,18 @@ def test_rejects_hs256_when_no_secret_configured(es256_key: ec.EllipticCurvePriv
     verifier = TokenVerifier(settings, jwks=StaticJwks(es256_key.public_key()))
     with pytest.raises(NotAuthenticated):
         verifier.verify(make_token(uuid.uuid4()))
+
+
+def test_issuer_can_differ_from_the_supabase_url() -> None:
+    """docker-compose: Supabase is reached at host.docker.internal, but tokens name 127.0.0.1."""
+    settings = get_settings().model_copy(
+        update={
+            "supabase_url": "http://host.docker.internal:54321",
+            "supabase_jwt_issuer": "http://127.0.0.1:54321/auth/v1/",
+        }
+    )
+    verifier = TokenVerifier(settings, jwks=StaticJwks(ec.generate_private_key(ec.SECP256R1()).public_key()))
+    sub = uuid.uuid4()
+    assert verifier.verify(make_token(sub, iss="http://127.0.0.1:54321/auth/v1"))["sub"] == str(sub)
+    with pytest.raises(NotAuthenticated):
+        verifier.verify(make_token(sub, iss="http://host.docker.internal:54321/auth/v1"))

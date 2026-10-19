@@ -1,19 +1,15 @@
 """Product schemas. Validation messages match the frontend's mock API."""
 
-import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.money import Money, to_money
+from app.common.money import Money, parse_money_input
 
 PRICE_ERROR = "Prices must be zero or more, with up to two decimals."
 MIN_QUANTITY_ERROR = "Minimum quantity must be a whole number, zero or more."
-# What a price field may hold: "12", "12.5", ".5", "12.345" (rounded half-up to cents).
-MONEY_INPUT = re.compile(r"^\d*(?:\.\d*)?$")
-MAX_PRICE = Decimal("9999999999.99")  # NUMERIC(12, 2)
 
 SortKey = Literal["name", "sku", "category", "cost_price", "sell_price", "quantity"]
 
@@ -83,13 +79,8 @@ def _clean_sku(value: str | None) -> str | None:
 def _parse_price(value: object) -> Decimal | None:
     if value is None:
         return None
-    if isinstance(value, bool):
-        raise ValueError(PRICE_ERROR)
-    text = str(value).strip()
-    if not text or text == "." or not MONEY_INPUT.match(text):
-        raise ValueError(PRICE_ERROR)
-    price = to_money(text)
-    if price > MAX_PRICE:
+    price = parse_money_input(value)
+    if price is None:
         raise ValueError(PRICE_ERROR)
     return price
 
