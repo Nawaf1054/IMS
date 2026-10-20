@@ -15,20 +15,25 @@ MAX_PAGE_SIZE = 100
 
 @dataclass(frozen=True)
 class PageParams:
+    """Which page of a list was asked for, after clamping."""
+
     page: int = 1
     page_size: int = DEFAULT_PAGE_SIZE
 
     @property
     def offset(self) -> int:
+        """Rows to skip before this page starts."""
         return (self.page - 1) * self.page_size
 
 
 def page_params(page: int = Query(1), page_size: int = Query(DEFAULT_PAGE_SIZE)) -> PageParams:
-    """Out-of-range values are clamped rather than rejected, like the frontend's mock API."""
+    """Reads `page` and `page_size`. Out-of-range values are clamped (page ≥ 1, 1 ≤ size ≤ 100) rather than rejected."""
     return PageParams(page=max(1, page), page_size=min(MAX_PAGE_SIZE, max(1, page_size)))
 
 
 class Page[T](BaseModel):
+    """One page of a list plus the total row count, so the UI can draw its pager."""
+
     items: list[T]
     total: int
     page: int

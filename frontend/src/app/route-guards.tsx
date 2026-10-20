@@ -1,3 +1,4 @@
+/** Route wrappers that require a signed-in user or an admin before showing a screen. */
 import type { ReactNode } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 

@@ -1,4 +1,4 @@
-"""Business settings schemas. Validation messages match the frontend's mock API."""
+"""Business settings schemas. Validation messages are the ones the UI shows."""
 
 from decimal import Decimal, InvalidOperation
 
@@ -14,6 +14,8 @@ def format_rate(rate: Decimal) -> str:
 
 
 class BusinessSettingsOut(BaseModel):
+    """The business settings as the API returns them."""
+
     business_name: str
     business_address: str
     currency: str
@@ -22,6 +24,8 @@ class BusinessSettingsOut(BaseModel):
 
 
 class BusinessSettingsUpdate(BaseModel):
+    """PATCH /settings body. Fields left out keep their value."""
+
     business_name: str | None = None
     business_address: str | None = None
     currency: str | None = None
@@ -30,6 +34,7 @@ class BusinessSettingsUpdate(BaseModel):
     @field_validator("business_name")
     @classmethod
     def _name(cls, value: str | None) -> str | None:
+        """The business name can't be blank: it's printed on every invoice."""
         if value is None:
             return None
         if not value.strip():
@@ -39,11 +44,13 @@ class BusinessSettingsUpdate(BaseModel):
     @field_validator("business_address")
     @classmethod
     def _address(cls, value: str | None) -> str | None:
+        """Trims the address (blank is allowed)."""
         return None if value is None else value.strip()
 
     @field_validator("currency")
     @classmethod
     def _currency(cls, value: str | None) -> str | None:
+        """Only the supported currency codes."""
         if value is not None and value not in SUPPORTED_CURRENCIES:
             raise ValueError("Unsupported currency.")
         return value
@@ -51,6 +58,7 @@ class BusinessSettingsUpdate(BaseModel):
     @field_validator("tax_rate", mode="before")
     @classmethod
     def _tax_rate(cls, value: object) -> str | None:
+        """A fraction between 0 and 1 (e.g. "0.15" for 15%), normalized."""
         if value is None:
             return None
         try:

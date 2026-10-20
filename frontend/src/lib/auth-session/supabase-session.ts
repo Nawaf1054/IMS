@@ -1,3 +1,4 @@
+/** Supabase Auth implementation of the app's session: sign-in, sign-out, tokens and refresh. */
 import type { AuthError, SupabaseClient } from '@supabase/supabase-js'
 
 import { STORAGE_KEYS } from '@/config/constants'

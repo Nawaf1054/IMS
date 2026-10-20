@@ -1,3 +1,4 @@
+/** The sidebar's link lists: one for everyone and one for admins. */
 import {
   ArrowLeftRightIcon,
   LayersIcon,
@@ -10,6 +11,7 @@ import {
   UsersIcon,
 } from 'lucide-react'
 
+/** One sidebar link. */
 export interface NavItem {
   to: string
   label: string
@@ -19,6 +21,7 @@ export interface NavItem {
   end?: boolean
 }
 
+/** Links every signed-in user sees. */
 export const MAIN_NAV: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon, end: true },
   { to: '/products', label: 'Products', icon: PackageIcon, lowStockBadge: true },
@@ -28,6 +31,7 @@ export const MAIN_NAV: NavItem[] = [
   { to: '/assistant', label: 'Assistant', icon: SparklesIcon },
 ]
 
+/** Links only admins see. */
 export const ADMIN_NAV: NavItem[] = [
   { to: '/users', label: 'Users', icon: UsersIcon },
   { to: '/settings', label: 'Settings', icon: SlidersHorizontalIcon },

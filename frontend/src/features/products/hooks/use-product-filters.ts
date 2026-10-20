@@ -1,9 +1,11 @@
+/** Product list filters stored in the URL query string. */
 import { useSearchParams } from 'react-router'
 
 import { DEFAULT_PAGE_SIZE } from '@/config/constants'
 
 import type { ProductListParams, ProductSortKey } from '../types'
 
+/** The product list's filter, sort and paging state. */
 export interface ProductFilters {
   search: string
   categoryId: number | null
@@ -15,6 +17,7 @@ export interface ProductFilters {
   pageSize: number
 }
 
+/** Sort keys accepted from the URL. */
 const SORT_KEYS: ProductSortKey[] = ['name', 'sku', 'category', 'cost_price', 'sell_price', 'quantity']
 
 /** Product list filters live in the URL so views can be linked and survive reloads. */
@@ -53,6 +56,7 @@ export function useProductFilters() {
   return { filters, update, clear, isFiltered }
 }
 
+/** The filters as GET /products query parameters (unset ones left out). */
 export function toListParams(filters: ProductFilters, search: string): ProductListParams {
   return {
     search: search || undefined,

@@ -14,6 +14,8 @@ from app.modules.users.models import Profile
 
 
 class MovementType(StrEnum):
+    """Why stock changed (STK-1)."""
+
     IN = "IN"  # received
     OUT = "OUT"  # removed or damaged
     ADJUSTMENT = "ADJUSTMENT"  # correction after a count
@@ -21,6 +23,8 @@ class MovementType(StrEnum):
 
 
 class StockMovement(IdMixin, Base):
+    """One recorded change to a product's quantity. Written once, never edited (STK-6)."""
+
     __tablename__ = "stock_movements"
     __table_args__ = (
         CheckConstraint("quantity <> 0", name="quantity_non_zero"),

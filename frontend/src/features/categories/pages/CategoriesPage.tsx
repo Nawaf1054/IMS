@@ -1,3 +1,4 @@
+/** /categories: the category tree with product counts; admins add, rename and delete. */
 import { LayersIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router'
@@ -21,6 +22,7 @@ import type { Category } from '@/types/models'
 
 import { useCategories, useCreateCategory, useDeleteCategory, useRenameCategory } from '../api/queries'
 
+/** One table row: a category, whether it's a subcategory, and its product counts. */
 interface Row {
   category: Category
   level: 1 | 2
@@ -29,6 +31,7 @@ interface Row {
   total: number
 }
 
+/** Top-level categories in name order, each followed by its subcategories. */
 function buildRows(categories: Category[]): Row[] {
   const tops = categories.filter((c) => c.parent_id === null).sort((a, b) => a.name.localeCompare(b.name))
   return tops.flatMap((top) => {
@@ -41,6 +44,7 @@ function buildRows(categories: Category[]): Row[] {
   })
 }
 
+/** Why a category can't be deleted (it, or one of its subcategories, has products). */
 function blockedReason(row: Row): string {
   if (row.category.product_count > 0) {
     return `${row.category.product_count} products are assigned to ${row.category.name}. Move them to another category or deactivate them, then try again.`
@@ -48,6 +52,7 @@ function blockedReason(row: Row): string {
   return `Its subcategories (${row.children.map((c) => c.name).join(', ')}) hold ${row.total} products. Empty them first.`
 }
 
+/** Category list with inline add / rename and a guarded delete (CAT-1 … CAT-3). */
 export function CategoriesPage() {
   const isAdmin = useIsAdmin()
   const { data: categories, isPending, isError, error, refetch } = useCategories()

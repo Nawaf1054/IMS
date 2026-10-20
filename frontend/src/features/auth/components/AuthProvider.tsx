@@ -1,3 +1,4 @@
+/** Provider that restores the session, loads the signed-in profile and handles sign-in / sign-out. */
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 

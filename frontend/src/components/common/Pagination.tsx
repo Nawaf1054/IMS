@@ -1,3 +1,4 @@
+/** List pager: "1–20 of 135", page buttons and the page-size selector. */
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -27,6 +28,7 @@ function pageList(page: number, pages: number): Array<number | 'gap'> {
 const pageButton =
   'inline-flex size-8 min-w-8 items-center justify-center rounded-lg border bg-card text-[13px] disabled:cursor-not-allowed disabled:opacity-50'
 
+/** Pager for a list of `total` rows shown `pageSize` at a time. */
 export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChange, summary }: PaginationProps) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1

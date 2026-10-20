@@ -1,3 +1,4 @@
+/** Vitest setup: jest-dom matchers, cleanup between tests, and stubs for browser APIs jsdom lacks. */
 import '@testing-library/jest-dom/vitest'
 
 import { cleanup } from '@testing-library/react'

@@ -1,3 +1,4 @@
+/** Small step chart of a product's stock level over the last 30 days. */
 import { Line, LineChart, ReferenceLine, XAxis, YAxis } from 'recharts'
 
 import { Panel } from '@/components/common/Panel'
@@ -10,16 +11,22 @@ import type { ProductDetail } from '@/types/models'
 import { useProductMovements } from '../api/queries'
 
 const DAYS = 30
+/** Most movements one request returns (the API's page-size limit). */
+const MAX_MOVEMENTS = 100
 
 /** Step chart of quantity on hand over the last 30 days, with the minimum as a dashed line. */
 export function StockLevelChart({ product }: { product: ProductDetail }) {
   const now = new Date()
-  const start = addDays(now, -(DAYS - 1))
-  start.setHours(0, 0, 0, 0)
-  const { data, isPending } = useProductMovements(product.id, { start_date: toISODate(start), page_size: 100 })
+  const windowStart = addDays(now, -(DAYS - 1))
+  windowStart.setHours(0, 0, 0, 0)
+  const { data, isPending } = useProductMovements(product.id, { start_date: toISODate(windowStart), page_size: MAX_MOVEMENTS })
 
   // Movements arrive newest first; the level before the oldest one is where the chart starts.
   const movements = [...(data?.items ?? [])].reverse()
+  // A busy product can have more movements than one page holds. Then the chart starts at the oldest
+  // loaded movement instead of claiming that level held since the start of the 30 days.
+  const truncated = !!data && data.total > data.items.length && movements.length > 0
+  const start = truncated ? new Date(movements[0].created_at) : windowStart
   const opening = movements.length ? movements[0].balance_after - movements[0].quantity : product.quantity
   const points = [
     { t: start.getTime(), qty: opening },

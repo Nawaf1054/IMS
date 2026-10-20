@@ -1,6 +1,8 @@
+/** Request types for the product endpoints. */
 import type { DateRangeParams, Money, PageParams } from '@/types/api'
 import type { MovementType } from '@/types/models'
 
+/** Columns the product list can sort by. */
 export type ProductSortKey = 'name' | 'sku' | 'category' | 'cost_price' | 'sell_price' | 'quantity'
 
 /** GET /products query (PRD-3: search, filter, sort, paginate). */
@@ -13,6 +15,7 @@ export interface ProductListParams extends PageParams {
   order?: 'asc' | 'desc'
 }
 
+/** GET /products/{id}/movements query. */
 export interface ProductMovementParams extends PageParams, DateRangeParams {
   type?: MovementType
 }
@@ -29,4 +32,5 @@ export interface ProductInput {
   is_active: boolean
 }
 
+/** What deleting did: removed the product, or only deactivated it. */
 export type DeleteProductResult = { result: 'deleted' | 'deactivated' }

@@ -1,3 +1,4 @@
+/** Table of stock movements: date, product, type, signed quantity, balance, note and who. */
 import { Link } from 'react-router'
 
 import { MovementTypeBadge } from '@/components/common/badges'
@@ -7,6 +8,7 @@ import { formatNumber, formatRelativeDateTime, formatSignedQuantity } from '@/li
 import { cn } from '@/lib/utils'
 import type { StockMovement } from '@/types/models'
 
+/** Movement rows with skeletons while loading. SALE rows link to their invoice. */
 export function MovementsTable({ movements, loading }: { movements: StockMovement[]; loading: boolean }) {
   return (
     <Table className="min-w-[920px]">

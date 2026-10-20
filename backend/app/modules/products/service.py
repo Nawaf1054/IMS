@@ -30,6 +30,7 @@ def invoice_counts(db: Session, product_ids: list[int]) -> dict[int, int]:
 
 
 def to_out(product: Product, invoice_count: int = 0) -> ProductOut:
+    """The API view of a product."""
     return ProductOut(
         id=product.id,
         name=product.name,
@@ -51,6 +52,7 @@ def to_out(product: Product, invoice_count: int = 0) -> ProductOut:
 
 
 def _detail(db: Session, product: Product) -> ProductDetailOut:
+    """The product page view: the product plus its 30-day sales and last receipt."""
     base = to_out(product, invoice_counts(db, [product.id]).get(product.id, 0))
     sales = repository.sales_since(db, product.id, utcnow() - SALES_WINDOW)
     return ProductDetailOut(
@@ -66,10 +68,12 @@ def _detail(db: Session, product: Product) -> ProductDetailOut:
 
 
 def _not_found() -> NotFound:
+    """The error for an unknown product id."""
     return NotFound("Product not found.", code="PRODUCT_NOT_FOUND")
 
 
 def get(db: Session, product_id: int) -> Product:
+    """The product, or 404 PRODUCT_NOT_FOUND."""
     product = repository.get(db, product_id)
     if product is None:
         raise _not_found()
@@ -94,6 +98,7 @@ def get_many_for_update(db: Session, product_ids: list[int]) -> dict[int, Produc
 
 
 def list_products(db: Session, filters: ProductFilters, params: PageParams) -> Page[ProductOut]:
+    """One page of products with how many invoices each appears on."""
     page = paginate(db, repository.list_query(filters), params, lambda p: p)
     counts = invoice_counts(db, [p.id for p in page.items])
     return Page[ProductOut](
@@ -104,26 +109,36 @@ def list_products(db: Session, filters: ProductFilters, params: PageParams) -> P
     )
 
 
+def export_rows(db: Session, filters: ProductFilters, limit: int) -> list[repository.ExportRow]:
+    """Products for the Excel export (EXP-1, EXP-5): the same filters and order as the list."""
+    return repository.export_rows(db, filters, limit)
+
+
 def get_detail(db: Session, product_id: int) -> ProductDetailOut:
+    """The product page view, or 404."""
     return _detail(db, get(db, product_id))
 
 
 def _sku_taken(sku: str, other: Product) -> Conflict:
+    """The error for a SKU another product already uses."""
     return Conflict(f"{sku} is already used by “{other.name}”.", code="SKU_TAKEN")
 
 
 def _check_sku(db: Session, sku: str, current_id: int | None = None) -> None:
+    """Refuses a SKU that belongs to a different product."""
     clash = repository.get_by_sku(db, sku)
     if clash and clash.id != current_id:
         raise _sku_taken(sku, clash)
 
 
 def _check_category(db: Session, category_id: int | None) -> None:
+    """Refuses a missing or unknown category."""
     if category_id is None or not categories_service.exists(db, category_id):
         raise ValidationFailed("Choose a category.")
 
 
 def _commit(db: Session, sku: str) -> None:
+    """Commits, turning a unique-SKU race with another request into SKU_TAKEN."""
     try:
         db.commit()
     except IntegrityError as exc:  # a concurrent request took the SKU
@@ -132,6 +147,7 @@ def _commit(db: Session, sku: str) -> None:
 
 
 def create_product(db: Session, data: ProductCreate) -> ProductOut:
+    """Creates a product with zero stock (PRD-1, PRD-4)."""
     _check_sku(db, data.sku)
     _check_category(db, data.category_id)
     product = repository.add(
@@ -155,6 +171,7 @@ def create_product(db: Session, data: ProductCreate) -> ProductOut:
 
 
 def update_product(db: Session, product_id: int, data: ProductUpdate) -> ProductDetailOut:
+    """Edits a product. Changing `quantity` here is refused: stock moves only via movements."""
     product = get(db, product_id)
     if "quantity" in data.model_fields_set:
         raise ValidationFailed(
@@ -174,6 +191,7 @@ def update_product(db: Session, product_id: int, data: ProductUpdate) -> Product
 
 
 def delete_product(db: Session, product_id: int) -> DeleteResult:
+    """Deletes a never-invoiced product; deactivates one that appears on invoices (PRD-2)."""
     product = get(db, product_id)
     # PRD-2: products that appear on invoices are deactivated instead of deleted.
     if invoice_counts(db, [product.id]).get(product.id, 0) > 0:

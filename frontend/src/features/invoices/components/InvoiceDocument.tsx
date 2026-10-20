@@ -1,3 +1,4 @@
+/** The printable invoice (INV-8): fixed black-on-white layout shared by the print page. */
 import { formatDocumentDateTime, formatMoney, formatTaxRate } from '@/lib/format'
 import { fromCents, toCents } from '@/lib/money'
 import type { BusinessSettings, Invoice } from '@/types/models'

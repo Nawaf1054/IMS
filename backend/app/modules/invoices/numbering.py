@@ -11,4 +11,5 @@ def invoice_year(at: datetime, tz: tzinfo) -> int:
 
 
 def format_number(year: int, sequence: int) -> str:
+    """`INV-2026-00001` for year 2026, sequence 1."""
     return f"{PREFIX}-{year}-{sequence:05d}"

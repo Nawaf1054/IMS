@@ -11,9 +11,11 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 @router.get("", response_model=BusinessSettingsOut)
 def read_settings(db: DbSession, _: CurrentUser) -> BusinessSettingsOut:
+    """The business settings (name, address, currency, tax rate)."""
     return service.read(db)
 
 
 @router.patch("", response_model=BusinessSettingsOut)
 def update_settings(data: BusinessSettingsUpdate, db: DbSession, _: AdminUser) -> BusinessSettingsOut:
+    """Admin: changes some or all business settings."""
     return service.update(db, data)

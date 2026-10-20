@@ -1,3 +1,4 @@
+/** Create / edit product form with validation, margin preview and the (coming soon) AI description. */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LockIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -15,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { AI_ASSISTANT_ENABLED } from '@/config/constants'
 import { useAiQuota, useGenerateDescription } from '@/features/assistant'
 import { categoryOptions, useCategories } from '@/features/categories'
 import { useCurrency } from '@/features/settings'
@@ -26,8 +28,10 @@ import type { ProductDetail } from '@/types/models'
 
 import type { ProductInput } from '../types'
 
+/** Validation for a money field, with an error that names it. */
 const money = (label: string) => z.string().trim().refine(isMoneyInput, `${label} must be an amount, e.g. 19.00.`)
 
+/** Product form validation (messages match the backend's). */
 const schema = z.object({
   name: z.string().trim().min(1, 'Name is required.'),
   sku: z
@@ -45,6 +49,7 @@ const schema = z.object({
 
 type ProductFormValues = z.infer<typeof schema>
 
+/** Form values for an existing product, or empty ones for a new product. */
 function toFormValues(product?: ProductDetail): ProductFormValues {
   return {
     name: product?.name ?? '',
@@ -58,6 +63,7 @@ function toFormValues(product?: ProductDetail): ProductFormValues {
   }
 }
 
+/** Props for ProductForm. */
 interface ProductFormProps {
   product?: ProductDetail
   onSubmit: (input: ProductInput) => Promise<unknown>
@@ -66,6 +72,7 @@ interface ProductFormProps {
   aside?: React.ReactNode
 }
 
+/** The product form. Quantity is shown read-only: it changes only through movements (PRD-4). */
 export function ProductForm({ product, onSubmit, header, aside }: ProductFormProps) {
   const currency = useCurrency()
   const { data: categories } = useCategories()
@@ -170,11 +177,18 @@ export function ProductForm({ product, onSubmit, header, aside }: ProductFormPro
                   variant="outline"
                   size="sm"
                   className="text-primary-soft-foreground"
-                  disabled={generate.isPending || quota?.remaining === 0}
+                  disabled={!AI_ASSISTANT_ENABLED || generate.isPending || quota?.remaining === 0}
+                  title={AI_ASSISTANT_ENABLED ? undefined : 'AI features are coming soon'}
                   onClick={generateDescription}
                 >
                   <SparklesIcon />
-                  {generate.isPending ? 'Writing…' : aiState === 'idle' ? 'AI: generate description' : 'Regenerate'}
+                  {!AI_ASSISTANT_ENABLED
+                    ? 'AI description · coming soon'
+                    : generate.isPending
+                      ? 'Writing…'
+                      : aiState === 'idle'
+                        ? 'AI: generate description'
+                        : 'Regenerate'}
                 </Button>
               }
             >

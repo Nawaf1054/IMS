@@ -11,4 +11,5 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/me", response_model=UserOut)
 def me(db: DbSession, user: CurrentUser) -> UserOut:
+    """The signed-in user's profile (the frontend calls this after sign-in). Also records activity."""
     return UserOut.model_validate(users_service.touch_last_active(db, user))

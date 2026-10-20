@@ -12,6 +12,7 @@ const MINUS = '−'
 const decimal2 = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const integer = new Intl.NumberFormat(LOCALE)
 
+/** "SAR 1,380.00"; negative amounts get a leading true minus. */
 export function formatMoney(value: Money | number, currency: string): string {
   const n = Number(value)
   return `${n < 0 ? `${MINUS} ` : ''}${currency} ${decimal2.format(Math.abs(n))}`
@@ -26,6 +27,7 @@ export function formatMoneyCompact(value: Money | number, currency: string): str
   return `${currency} ${k.toFixed(digits).replace(/\.0$/, '')}k`
 }
 
+/** Whole number with thousands separators. */
 export function formatNumber(value: number): string {
   return integer.format(value)
 }
@@ -58,9 +60,12 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+/** Two-digit zero padding, e.g. 7 → "07". */
 const pad = (n: number) => String(n).padStart(2, '0')
+/** "HH:MM" in 24-hour local time. */
 const time = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
 
+/** Whether two dates fall on the same calendar day. */
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
@@ -110,6 +115,7 @@ export function formatRange(range: DateRange): string {
   return `${formatShortDate(start)}${startYear} – ${formatShortDate(end)}, ${end.getFullYear()}`
 }
 
+/** Up to two initials from a name, e.g. "Fahad Al-Harbi" → "FA". */
 export function initials(name: string): string {
   return name
     .split(/\s+/)

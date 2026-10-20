@@ -1,4 +1,4 @@
-"""Category schemas. Validation messages match the frontend's mock API."""
+"""Category request and response schemas. Validation messages are the ones the UI shows."""
 
 from datetime import datetime
 
@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class CategoryOut(BaseModel):
+    """A category as the API returns it."""
+
     id: int
     name: str
     parent_id: int | None
@@ -15,6 +17,7 @@ class CategoryOut(BaseModel):
 
 
 def _clean_name(value: str | None) -> str | None:
+    """Trims the name and checks it's present and not too long."""
     if value is None:
         return None
     name = value.strip()
@@ -26,6 +29,8 @@ def _clean_name(value: str | None) -> str | None:
 
 
 class CategoryCreate(BaseModel):
+    """POST /categories body."""
+
     name: str = Field(default="", validate_default=True)
     parent_id: int | None = None
 

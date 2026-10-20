@@ -1,3 +1,4 @@
+/** URL → screen mapping for the whole app, including which routes need sign-in or an admin. */
 import { createBrowserRouter } from 'react-router'
 
 import { AppLayout } from './layout/AppLayout'

@@ -1,3 +1,4 @@
+/** Row of toggle chips for picking one filter value (e.g. a movement type). */
 import { cn } from '@/lib/utils'
 
 import type { SegmentOption } from './SegmentedControl'

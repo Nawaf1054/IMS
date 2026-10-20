@@ -30,8 +30,6 @@ services:
     working_dir: /repo/frontend
     command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
     env_file: .env
-    environment:
-      VITE_USE_MOCKS: "false"
     ports:
       - "5173:5173"
     volumes:

@@ -1,3 +1,4 @@
+/** Colour rule for showing a product's quantity. */
 import type { Product } from '@/types/models'
 
 /** Text colour for a quantity: red when out, amber when low, muted when inactive. */

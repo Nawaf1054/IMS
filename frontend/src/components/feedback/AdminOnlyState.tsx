@@ -1,3 +1,4 @@
+/** Message shown to staff who open an admin-only screen. */
 import { LockIcon } from 'lucide-react'
 import { Link } from 'react-router'
 

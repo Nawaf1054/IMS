@@ -19,6 +19,7 @@ user_role = sa.Enum("admin", "staff", name="user_role")
 
 
 def upgrade() -> None:
+    """Creates the profiles table and the user_role enum."""
     op.create_table(
         "profiles",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -39,5 +40,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drops the profiles table and the user_role enum."""
     op.drop_table("profiles")
     user_role.drop(op.get_bind(), checkfirst=True)

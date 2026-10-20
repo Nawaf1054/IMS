@@ -1,3 +1,4 @@
+/** /products/new and /products/:id/edit: the product form in its two modes. */
 import { TriangleAlertIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -15,6 +16,7 @@ import { useCreateProduct, useProduct, useUpdateProduct } from '../api/queries'
 import { DeleteProductDialog } from '../components/DeleteProductDialog'
 import { ProductForm } from '../components/ProductForm'
 
+/** Breadcrumbs, title and save / cancel buttons for the product form. */
 function Header({ product, submitting }: { product?: ProductDetail; submitting: boolean }) {
   const cancelTo = product ? `/products/${product.id}` : '/products'
   return (
@@ -39,6 +41,7 @@ function Header({ product, submitting }: { product?: ProductDetail; submitting: 
   )
 }
 
+/** Creates a product, then opens its page. */
 export function NewProductPage() {
   const navigate = useNavigate()
   const create = useCreateProduct()
@@ -56,6 +59,7 @@ export function NewProductPage() {
   )
 }
 
+/** Edits a product; also offers delete (or deactivate, if it was invoiced). */
 export function EditProductPage() {
   const id = Number(useParams().id)
   const navigate = useNavigate()

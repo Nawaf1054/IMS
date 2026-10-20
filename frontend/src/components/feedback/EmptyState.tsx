@@ -1,3 +1,4 @@
+/** Placeholder for lists and panels with nothing to show. */
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -13,6 +14,7 @@ interface EmptyStateProps {
   className?: string
 }
 
+/** Icon, title, description and an optional action, centred. */
 export function EmptyState({ icon: Icon, title, description, action, bordered, className }: EmptyStateProps) {
   return (
     <div

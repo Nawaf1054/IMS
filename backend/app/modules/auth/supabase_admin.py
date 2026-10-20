@@ -20,6 +20,7 @@ class AuthAdminError(Exception):
     """A failed admin call. `code` is Supabase's error code, e.g. `email_exists`, `weak_password`."""
 
     def __init__(self, code: str, message: str, status: int = 0):
+        """Keeps Supabase's error code, message and HTTP status for the caller."""
         super().__init__(message)
         self.code = code
         self.message = message
@@ -27,19 +28,32 @@ class AuthAdminError(Exception):
 
 
 class AuthAdmin(Protocol):
-    def create_user(self, email: str, password: str) -> uuid.UUID: ...
+    """What the app needs from the Supabase Auth admin API. Tests provide a fake."""
+
+    def create_user(self, email: str, password: str) -> uuid.UUID:
+        """Creates a confirmed user and returns its Supabase id."""
+        ...
 
     def update_user(
         self, auth_user_id: uuid.UUID, *, email: str | None = None, banned: bool | None = None
-    ) -> None: ...
+    ) -> None:
+        """Changes the email and/or the ban (deactivation) state. None leaves a field unchanged."""
+        ...
 
-    def delete_user(self, auth_user_id: uuid.UUID) -> None: ...
+    def delete_user(self, auth_user_id: uuid.UUID) -> None:
+        """Deletes the user."""
+        ...
 
-    def find_user_id_by_email(self, email: str) -> uuid.UUID | None: ...
+    def find_user_id_by_email(self, email: str) -> uuid.UUID | None:
+        """The id of the user with this email, or None."""
+        ...
 
 
 class SupabaseAuthAdmin:
+    """AuthAdmin over HTTP, authenticated with the server-only secret key."""
+
     def __init__(self, auth_url: str, secret_key: str, timeout: float = 10.0):
+        """Sets up an HTTP client for `<auth_url>/admin` with the right key headers."""
         if not secret_key:
             raise AuthAdminError("not_configured", "SUPABASE_SECRET_KEY is not set.")
         headers = {"apikey": secret_key}
@@ -49,6 +63,7 @@ class SupabaseAuthAdmin:
         self._client = httpx.Client(base_url=f"{auth_url}/admin", headers=headers, timeout=timeout)
 
     def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        """Sends one admin request; raises AuthAdminError on network or HTTP errors."""
         try:
             response = self._client.request(method, path, **kwargs)
         except httpx.HTTPError as exc:
@@ -61,6 +76,7 @@ class SupabaseAuthAdmin:
         return body
 
     def create_user(self, email: str, password: str) -> uuid.UUID:
+        """Creates a confirmed email/password user and returns its id."""
         body = self._request(
             "POST", "/users", json={"email": email, "password": password, "email_confirm": True}
         )
@@ -69,6 +85,7 @@ class SupabaseAuthAdmin:
     def update_user(
         self, auth_user_id: uuid.UUID, *, email: str | None = None, banned: bool | None = None
     ) -> None:
+        """Changes the user's email and/or bans them (deactivated) or lifts the ban."""
         payload: dict[str, Any] = {}
         if email is not None:
             payload.update(email=email, email_confirm=True)
@@ -78,6 +95,7 @@ class SupabaseAuthAdmin:
             self._request("PUT", f"/users/{auth_user_id}", json=payload)
 
     def delete_user(self, auth_user_id: uuid.UUID) -> None:
+        """Deletes the Supabase user (used to undo a half-finished create)."""
         self._request("DELETE", f"/users/{auth_user_id}")
 
     def find_user_id_by_email(self, email: str) -> uuid.UUID | None:
@@ -95,5 +113,6 @@ class SupabaseAuthAdmin:
 
 @lru_cache
 def get_auth_admin() -> AuthAdmin:
+    """The shared admin client, built from the settings on first use."""
     settings = get_settings()
     return SupabaseAuthAdmin(settings.supabase_auth_url, settings.supabase_secret_key)

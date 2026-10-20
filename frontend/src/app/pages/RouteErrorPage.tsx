@@ -1,3 +1,4 @@
+/** Fallback screen shown when a route crashes while loading or rendering. */
 import { TriangleAlertIcon } from 'lucide-react'
 import { useRouteError } from 'react-router'
 

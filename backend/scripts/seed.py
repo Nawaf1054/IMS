@@ -46,6 +46,9 @@ DEMO_USERS = [
 def ensure_user(
     db: Session, auth_admin: AuthAdmin, *, name: str, email: str, password: str, role: Role
 ) -> Profile:
+    """Returns the profile for `email`, creating the Supabase user and profile if needed.
+    Safe to run again: an existing profile or Supabase user is reused.
+    """
     email = email.lower()
     existing = repository.get_by_email(db, email)
     if existing:
@@ -67,6 +70,7 @@ def ensure_user(
 
 
 def ensure_catalog(db: Session) -> None:
+    """Creates the demo categories and products that don't exist yet (matched by name / SKU)."""
     by_name: dict[str, Category] = {}
     for name, parent_name in demo_data.CATEGORIES:
         category = categories_repository.get_by_name(db, name)
@@ -118,6 +122,7 @@ def ensure_settings(db: Session) -> None:
 
 
 def main() -> int:
+    """Command-line entry point. Returns the process exit code."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )

@@ -1,3 +1,4 @@
+/** Search box with a magnifier icon and a screen-reader label. */
 import { SearchIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
@@ -10,6 +11,7 @@ interface SearchInputProps extends Omit<ComponentProps<'input'>, 'type'> {
   inputClassName?: string
 }
 
+/** A search input; extra props go to the <input>. */
 export function SearchInput({ label, className, inputClassName, ...props }: SearchInputProps) {
   return (
     <label className={cn('relative flex items-center', className)}>

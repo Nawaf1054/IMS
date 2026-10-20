@@ -53,7 +53,7 @@ React 19 + TypeScript, Vite, Tailwind CSS v4 with shadcn/ui (Radix), TanStack Qu
 
 ```
 frontend/src/
-├── main.tsx             Entry: starts the mock API when enabled, renders <App>
+├── main.tsx             Entry: loads global styles, renders <App>
 ├── app/                 Composition root: wires features together
 │   ├── App.tsx, providers.tsx      Theme → Query → Auth → Tooltip/Toaster
 │   ├── router.tsx                  Route table (PRD §9); pages are lazy-loaded
@@ -73,16 +73,12 @@ frontend/src/
 │       ├── pages/       Route-level screens
 │       ├── types.ts     Request/response types owned by the feature
 │       └── index.ts     Public API for other features (hooks only)
-├── mocks/               In-browser mock of the whole /api/v1 surface (MSW)
-│   ├── data/seed.ts     Design's catalog + ~4 months of generated, consistent history
-│   ├── db.ts            In-memory tables and the business rules (stock, invoices, analytics)
-│   └── handlers/        One file per API resource
 ├── lib/                 api-client (JWT + refresh), query-client, money (cents), format, dates, theme
 ├── hooks/               Generic hooks
 ├── config/              env.ts, constants.ts
 ├── types/               API envelopes (api.ts) and shared entities (models.ts)
 ├── styles/              globals.css (design tokens → Tailwind/shadcn), print.css
-└── test/                Test setup + app smoke test
+└── test/                Test setup (jsdom stubs)
 ```
 
 Features: `auth`, `dashboard`, `products`, `categories`, `stock`, `invoices`, `assistant`, `users`, `settings`.
@@ -95,10 +91,15 @@ Features: `auth`, `dashboard`, `products`, `categories`, `stock`, `invoices`, `a
 - **Design tokens** live only in `styles/globals.css` (light + dark). Components use token classes (`bg-subtle`, `text-warning`, `bg-primary-soft`…), never raw colours. The printed invoice is the one exception: fixed black on white.
 - **Role checks in the UI are hints;** the backend enforces them (AUTH-4).
 
-### Mock API
-`VITE_USE_MOCKS=true` (the default) serves every `/api/v1` endpoint from the browser via Mock Service Worker. The mock applies the PRD rules (no negative stock, atomic invoices, cancel → reverse movements, role checks, AI rate limit) so the UI is built against realistic behaviour. Data resets on reload. Set `VITE_USE_MOCKS=false` to talk to the real backend and Supabase Auth; no feature code changes. The mock handlers are the API contract: the backend matches their paths, payloads, error codes and messages.
+### API contract
+The frontend always talks to the real backend; there is no mock mode. Each feature's `types.ts` is the contract: the backend's Pydantic schemas match those field names and shapes exactly.
 
-Endpoints the UI needs beyond the PRD §8 table: `GET /auth/me`, `GET /invoices/summary`, `GET /invoices/next-number` (done), `GET /ai/quota`.
+The UI was first built against an in-browser mock API (MSW), removed after M7. For M8, `features/assistant/types.ts` defines the AI payloads, and the old mock (`frontend/src/mocks/handlers/ai.ts` in commit `3f52d3f`) shows the expected behaviour: tool calls, quota and rate-limit errors.
+
+Endpoints the UI needs beyond the PRD §8 table: `GET /auth/me`, `GET /invoices/summary`, `GET /invoices/next-number` (done), `GET /ai/quota` (M8).
+
+### Unreleased features
+`AI_ASSISTANT_ENABLED` in `config/constants.ts` is `false` until M8 ships. While it's off, `/assistant` shows a blurred, non-interactive preview under a "Coming soon" card (`components/feedback/ComingSoon.tsx`), the product form's AI description button is disabled, and nothing calls `/ai/*`.
 
 ## Authentication (Supabase Auth)
 
@@ -109,7 +110,7 @@ Browser ── signInWithPassword / refresh ──► Supabase Auth
 FastAPI ── verify JWT (JWKS or HS256 secret) ──► profiles row (role, is_active) ──► Postgres
 ```
 
-- **Frontend:** `lib/auth-session/` hides where the session comes from: `supabase-session.ts` (supabase-js) or `mock-session.ts` (the mock API's `/auth/login` and `/auth/refresh`), picked by `VITE_USE_MOCKS`. `api-client.ts` asks it for the token and retries once after a refresh on 401. Supabase errors are mapped to the existing codes (`INVALID_CREDENTIALS`, `ACCOUNT_INACTIVE`).
+- **Frontend:** `lib/auth-session/` wraps Supabase Auth (`supabase-session.ts`, supabase-js). `api-client.ts` asks it for the token and retries once after a refresh on 401. Supabase errors are mapped to the existing codes (`INVALID_CREDENTIALS`, `ACCOUNT_INACTIVE`).
 - **Backend:** `core/security.py` verifies the token (audience `authenticated`, issuer `<SUPABASE_URL>/auth/v1`). `api/deps.py` loads the `profiles` row by `auth_user_id = sub` and rejects missing or inactive profiles (401). `require_admin` returns 403.
 - **Users** (`profiles`): an integer `id` (used by the API and later FKs), `auth_user_id` (Supabase user), name, lower-cased email, role and active flag. There's no FK to `auth.users` because that schema only exists on Supabase. Role and active flag live here, not in Supabase metadata, so changes apply on the next request.
 - **Admin actions** go through `modules/auth/supabase_admin.py` (secret key, server only). Create: Supabase user, then profile; if the profile insert fails, the Supabase user is deleted. Deactivate: `is_active=false` plus a Supabase ban, which stops token refresh. Self sign-up is off (`supabase/config.toml`).
@@ -131,15 +132,17 @@ Answers to the PRD's open questions (§12) and other choices made along the way.
 | Production DB connection | Supabase session pooler (port 5432, IPv4). If the transaction pooler (6543) is ever used, set psycopg `prepare_threshold=None`. |
 | LLM provider | Decide at M8; `ai/client.py` stays an adapter. |
 | Customer management | Not decided yet. |
-| Category nesting | One level (CAT-2). A category that has subcategories can't be moved under another one (`NESTING_TOO_DEEP`); the mock doesn't check this. |
+| Category nesting | One level (CAT-2). A category that has subcategories can't be moved under another one (`NESTING_TOO_DEEP`). |
 | Demo stock | Products are created at quantity 0; `seed --demo` then records one "Opening stock" IN movement per product (`demo_data.OPENING_STOCK`), so quantities match the design and PRD-4 holds. |
 | Stock concurrency | `stock.service.apply()` is the only code that changes `Product.quantity`. Callers lock the product row first (`products_service.get_for_update`, `SELECT … FOR UPDATE`), so concurrent movements queue instead of overselling. Movements are stamped with `clock_timestamp()`, so time order matches balance order. A `CHECK (quantity >= 0)` backs it up. |
 | Movement quantities | `stock_movements.quantity` is the signed change and `balance_after` the resulting quantity. For ADJUSTMENT the API takes the counted quantity and stores the difference. |
 | Date filters | `start_date` / `end_date` are inclusive days in `BUSINESS_TIMEZONE` (default `Asia/Riyadh`). They become UTC bounds before querying, so the `created_at` indexes still apply. |
-| Deleting products | A product that was never invoiced is hard-deleted along with its movement history (`ON DELETE CASCADE`), as in the mock. Invoiced products are only deactivated (PRD-2); `invoice_items.product_id` is `RESTRICT`, so the database enforces it too. |
+| Deleting products | A product that was never invoiced is hard-deleted along with its movement history (`ON DELETE CASCADE`). Invoiced products are only deactivated (PRD-2); `invoice_items.product_id` is `RESTRICT`, so the database enforces it too. |
 | Invoice transaction | `invoices.service.create_invoice` checks the whole request first, then locks every product on it (`products_service.get_many_for_update`, in id order so concurrent sales can't deadlock), writes the invoice and its items, and calls `stock.service.apply()` for each SALE movement, with one commit (INV-4). Cancelling locks the invoice row, adds a reversal IN movement per line (`Reversal: <number> cancelled`, linked to the invoice) and sets `CANCELLED` (INV-6). |
 | Invoice numbers | `INV-<year>-<5 digits>`, sequential per business-local year (INV-3). An `invoice_sequences` row per year is incremented with `INSERT … ON CONFLICT DO UPDATE` inside the invoice transaction: numbers are unique even under concurrent sales, and a failed invoice rolls its number back, so there are no gaps. `GET /invoices/next-number` only previews it. |
 | Invoice totals | Stored on the invoice, never recomputed. Discount comes off the subtotal before tax, tax is rounded half-up to the cent, and the tax rate is copied from the settings (to 0.01%) when the invoice is created. CHECK constraints keep `total = subtotal − discount + tax_amount` and `line_total = quantity × unit_price`. Staff sell at the product price; only admins may send a different `unit_price`. |
 | Invoice PDF | `invoices/templates/invoice.html` (Jinja2, autoescaped) mirrors the frontend's printable invoice and is rendered by WeasyPrint. WeasyPrint is imported only on a PDF request, so the API runs without its system libraries and answers `503 PDF_UNAVAILABLE`. The Docker image and CI install `libpango` and a font. |
 | Token issuer | `SUPABASE_JWT_ISSUER` overrides the expected `iss` when the backend reaches Supabase at a different address than the one in tokens (docker-compose: `host.docker.internal` vs `127.0.0.1`). |
 | Business settings | `settings` key/value table over defaults from the environment (`DEFAULT_CURRENCY`, `DEFAULT_TAX_RATE`, business name "My Business"). |
+| Excel exports | `exports/xlsx.py` writes one sheet per export with openpyxl in write-only (streaming) mode: bold frozen header, autofilter, currency/date/integer formats, columns sized to their widest value (8–60 characters). Each module's repository has an `export_rows` query that selects plain columns (no ORM objects) with the same filters and order as its list, so the file matches the screen (EXP-5). Timestamps are written in business-local time. Text cells are forced to plain text, so a name starting with `=` can't become an Excel formula. More rows than one sheet holds (1,048,575) answers `422 EXPORT_TOO_LARGE`. |
+| Dashboard figures | Summed by PostgreSQL in `dashboard/repository.py`; only `COMPLETED` invoices count. Revenue on the KPI cards and the sales chart is the invoice total (after discount, with tax); top products and category revenue use line totals (before discount and tax), since a discount isn't split across lines. Days are business-local: daily buckets group by `timezone(BUSINESS_TIMEZONE, created_at)::date`. Weekly buckets are 7-day blocks counted from the range start; monthly buckets follow the calendar. Subcategory sales roll up into their parent. Low and out-of-stock counts include active products only. Chart ranges are capped at five years. |

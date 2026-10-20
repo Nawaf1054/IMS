@@ -1,3 +1,4 @@
+/** Figure card used for KPIs and summaries: label, big value, detail line, optional meter. */
 import type { ReactNode } from 'react'
 
 import { Skeleton } from '@/components/ui/skeleton'

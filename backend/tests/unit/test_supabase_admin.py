@@ -15,6 +15,7 @@ AUTH_URL = "http://supabase.test/auth/v1"
 def make_admin(
     handler: Callable[[httpx.Request], httpx.Response], key: str = "sb_secret_abc"
 ) -> SupabaseAuthAdmin:
+    """A real SupabaseAuthAdmin whose HTTP calls go to `handler` instead of the network."""
     admin = SupabaseAuthAdmin(AUTH_URL, key)
     admin._client = httpx.Client(
         base_url=f"{AUTH_URL}/admin", headers=admin._client.headers, transport=httpx.MockTransport(handler)

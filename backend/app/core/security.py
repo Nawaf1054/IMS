@@ -18,11 +18,18 @@ ASYMMETRIC_ALGORITHMS = ["ES256", "RS256"]
 
 
 class SigningKeySource(Protocol):
-    def get_signing_key_from_jwt(self, token: str) -> jwt.PyJWK: ...
+    """Anything that returns the public key for a token (PyJWKClient, or a fake in tests)."""
+
+    def get_signing_key_from_jwt(self, token: str) -> jwt.PyJWK:
+        """The public key that signed `token` (picked by the token's `kid`)."""
+        ...
 
 
 class TokenVerifier:
+    """Checks a Supabase access token's signature, audience, issuer and expiry."""
+
     def __init__(self, settings: Settings, jwks: SigningKeySource | None = None):
+        """Reads the issuer and HS256 secret from the settings and prepares the JWKS client."""
         self._issuer = settings.jwt_issuer
         self._hs256_secret = settings.supabase_jwt_secret
         # Keys are fetched from wherever this server reaches Supabase, which may differ from the issuer.
@@ -58,4 +65,5 @@ class TokenVerifier:
 
 @lru_cache
 def get_token_verifier() -> TokenVerifier:
+    """The shared verifier (it caches Supabase's public keys between requests)."""
     return TokenVerifier(get_settings())

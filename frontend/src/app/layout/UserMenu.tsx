@@ -1,3 +1,4 @@
+/** Account menu in the top bar: who is signed in, their role, and sign-out. */
 import { LogOutIcon } from 'lucide-react'
 
 import { RoleBadge } from '@/components/common/badges'
@@ -13,6 +14,7 @@ import { useAuth, useCurrentUser } from '@/features/auth'
 import { initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
+/** Avatar button that opens the account menu. */
 export function UserMenu() {
   const user = useCurrentUser()
   const { logout } = useAuth()

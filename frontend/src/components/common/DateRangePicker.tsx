@@ -1,3 +1,4 @@
+/** Date range picker with quick presets and two calendar months. */
 import { CalendarIcon, ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 

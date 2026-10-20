@@ -44,6 +44,7 @@ BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _create_test_database() -> None:
+    """Creates the test database on the server if it doesn't exist yet."""
     url = make_url(TEST_DATABASE_URL)
     admin_engine = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
     with admin_engine.connect() as conn:
@@ -55,6 +56,7 @@ def _create_test_database() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def migrated_database() -> Iterator[None]:
+    """Once per test run: rebuilds the test schema from the migrations."""
     _create_test_database()
     config = Config(os.path.join(BACKEND_DIR, "alembic.ini"))
     config.attributes["database_url"] = TEST_DATABASE_URL
@@ -80,11 +82,13 @@ def db() -> Iterator[Session]:
 
 @pytest.fixture
 def auth_admin() -> FakeAuthAdmin:
+    """An in-memory stand-in for Supabase's admin API."""
     return FakeAuthAdmin()
 
 
 @pytest.fixture
 def client(db: Session, auth_admin: FakeAuthAdmin) -> Iterator[TestClient]:
+    """An API client wired to the test's session and the fake Supabase admin."""
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_auth_admin] = lambda: auth_admin
     with TestClient(app) as test_client:
@@ -94,19 +98,23 @@ def client(db: Session, auth_admin: FakeAuthAdmin) -> Iterator[TestClient]:
 
 @pytest.fixture
 def admin(db: Session) -> Profile:
+    """An active admin profile."""
     return create_profile(db, role=Role.ADMIN, name="Admin", email="admin@example.com")
 
 
 @pytest.fixture
 def staff(db: Session) -> Profile:
+    """An active staff profile."""
     return create_profile(db, role=Role.STAFF, name="Staff", email="staff@example.com")
 
 
 @pytest.fixture
 def admin_headers(admin: Profile) -> dict[str, str]:
+    """Authorization header for the admin."""
     return auth_header(admin)
 
 
 @pytest.fixture
 def staff_headers(staff: Profile) -> dict[str, str]:
+    """Authorization header for the staff user."""
     return auth_header(staff)

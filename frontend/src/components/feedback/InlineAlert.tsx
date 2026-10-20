@@ -1,3 +1,4 @@
+/** Inline message box for errors, warnings and notes inside a page or form. */
 import { CircleAlertIcon, LockIcon, TriangleAlertIcon, XIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 

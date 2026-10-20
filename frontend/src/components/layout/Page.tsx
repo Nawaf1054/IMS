@@ -1,3 +1,4 @@
+/** Page scaffolding: the padded content area and the page header with title, breadcrumbs and actions. */
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
@@ -24,6 +25,7 @@ interface PageHeaderProps {
   className?: string
 }
 
+/** Breadcrumbs, the page title (h1), an optional description and actions on the right. */
 export function PageHeader({ title, description, actions, breadcrumbs, meta, className }: PageHeaderProps) {
   return (
     <div className={cn('flex flex-col gap-1', className)}>

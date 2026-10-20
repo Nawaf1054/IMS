@@ -1,3 +1,4 @@
+/** Side sheet for recording an IN, OUT or ADJUSTMENT movement (STK-1 … STK-4). */
 import { CircleAlertIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -17,18 +18,21 @@ import { useRecordMovement } from '../api/queries'
 import type { ManualMovementType } from '../types'
 import { ProductPicker } from './ProductPicker'
 
+/** The movement types a person can record, with help text. */
 const KINDS: Array<{ type: ManualMovementType; label: string; help: string }> = [
   { type: 'IN', label: 'IN', help: 'Received' },
   { type: 'OUT', label: 'OUT', help: 'Removed / damaged' },
   { type: 'ADJUSTMENT', label: 'ADJUST', help: 'Set counted qty' },
 ]
 
+/** Example note for each type. */
 const NOTE_PLACEHOLDER: Record<ManualMovementType, string> = {
   IN: 'Delivery note or supplier reference (optional)',
   OUT: 'Why is stock leaving? e.g. damaged, expired',
   ADJUSTMENT: 'What did the count find?',
 }
 
+/** Props for NewMovementSheet. */
 interface NewMovementSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -52,6 +56,7 @@ export function NewMovementSheet({ open, onOpenChange, initialProductId, initial
   )
 }
 
+/** The movement form. Shows the resulting quantity and blocks going below zero. */
 function MovementForm({ initialProductId, initialType, onDone }: { initialProductId?: number; initialType?: ManualMovementType; onDone: () => void }) {
   const record = useRecordMovement()
   const preselected = useProduct(initialProductId ?? NaN)

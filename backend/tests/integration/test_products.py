@@ -13,6 +13,7 @@ URL = "/api/v1/products"
 
 
 def names(response: Any) -> list[str]:
+    """The product names in a list response, in order."""
     return [p["name"] for p in response.json()["items"]]
 
 
@@ -154,6 +155,7 @@ def test_pagination(client: TestClient, db: Session, staff_headers: dict[str, st
 
 
 def new_product(category_id: int, **overrides: Any) -> dict[str, Any]:
+    """A valid create-product body; keyword arguments override fields."""
     return {
         "name": "Wall paint 18L",
         "sku": " pt-wal-018 ",

@@ -18,11 +18,15 @@ from app.modules.users.models import Profile
 
 
 class InvoiceStatus(StrEnum):
+    """An invoice is COMPLETED when saved; CANCELLED after an admin cancels it."""
+
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
 
 class InvoiceItem(IdMixin, Base):
+    """One line of an invoice: product, quantity and the price at the time of sale."""
+
     __tablename__ = "invoice_items"
     __table_args__ = (
         CheckConstraint("quantity > 0", name="quantity_positive"),
@@ -46,6 +50,8 @@ class InvoiceItem(IdMixin, Base):
 
 
 class Invoice(IdMixin, CreatedAtMixin, Base):
+    """A sale. Totals are stored as computed when it was created and never change."""
+
     __tablename__ = "invoices"
     __table_args__ = (
         CheckConstraint("subtotal >= 0", name="subtotal_non_negative"),

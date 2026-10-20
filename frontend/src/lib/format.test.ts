@@ -1,3 +1,4 @@
+/** Tests for the display formatters (money, quantities, rates, dates, initials). */
 import { formatChange, formatMoney, formatMoneyCompact, formatRange, formatRelativeDateTime, formatSignedQuantity, formatTaxRate, initials } from './format'
 
 describe('format', () => {

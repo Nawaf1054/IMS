@@ -1,7 +1,7 @@
 """Invoice schemas. Shape checks live here; sales rules (with their error codes) in the service.
 
 Amounts arrive as strings the user typed ("50", "19.5") and are parsed in the service, so a bad
-discount or price gets its own code (INVALID_DISCOUNT, INVALID_PRICE), as in the mock API.
+discount or price gets its own code (INVALID_DISCOUNT, INVALID_PRICE).
 """
 
 from datetime import date, datetime
@@ -20,6 +20,8 @@ MAX_CUSTOMER_NAME = 120
 
 
 class InvoiceSummaryOut(BaseModel):
+    """An invoice as shown in the list."""
+
     id: int
     invoice_number: str
     # null is a walk-in customer.
@@ -33,6 +35,8 @@ class InvoiceSummaryOut(BaseModel):
 
 
 class InvoiceItemOut(BaseModel):
+    """One invoice line as the API returns it."""
+
     id: int
     product_id: int
     product_name: str
@@ -44,6 +48,8 @@ class InvoiceItemOut(BaseModel):
 
 
 class InvoiceOut(InvoiceSummaryOut):
+    """A full invoice: the summary plus totals, lines and the stock movements it caused."""
+
     subtotal: Money
     discount: Money
     # Fraction, e.g. "0.15" for 15%.
@@ -67,6 +73,8 @@ class InvoiceStats(BaseModel):
 
 
 class NextNumberOut(BaseModel):
+    """GET /invoices/next-number response."""
+
     invoice_number: str
 
 
@@ -74,6 +82,8 @@ class NextNumberOut(BaseModel):
 
 
 class InvoiceLineIn(BaseModel):
+    """One requested line: product, quantity and (admins only) a different unit price."""
+
     product_id: int
     quantity: int
     # Only sent when an admin overrides the product's price.
@@ -82,6 +92,7 @@ class InvoiceLineIn(BaseModel):
     @field_validator("quantity", mode="before")
     @classmethod
     def _quantity(cls, value: object) -> object:
+        """Accepts only real integers, so "5" or 2.5 get a clear error instead of being coerced."""
         # Strict: "5", 2.5 and true are rejected rather than coerced.
         if isinstance(value, bool) or not isinstance(value, int):
             raise ValueError("Each line needs a quantity of at least 1.")
@@ -89,6 +100,8 @@ class InvoiceLineIn(BaseModel):
 
 
 class InvoiceCreate(BaseModel):
+    """POST /invoices body."""
+
     customer_name: str | None = None
     discount: str = "0"
     items: list[InvoiceLineIn] = []
@@ -96,6 +109,7 @@ class InvoiceCreate(BaseModel):
     @field_validator("customer_name")
     @classmethod
     def _customer_name(cls, value: str | None) -> str | None:
+        """Trims the name; blank means a walk-in customer (stored as NULL)."""
         name = (value or "").strip()
         if len(name) > MAX_CUSTOMER_NAME:
             raise ValueError(f"Keep the customer name under {MAX_CUSTOMER_NAME} characters.")

@@ -1,3 +1,4 @@
+/** Tests for integer-cent money arithmetic and money input validation. */
 import { applyRate, fromCents, isMoneyInput, toCents } from './money'
 
 describe('money', () => {

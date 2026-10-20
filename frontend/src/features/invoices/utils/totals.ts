@@ -17,6 +17,7 @@ export interface InvoiceTotals {
   total: number
 }
 
+/** Quantity × unit price, in cents. */
 export function lineTotal(line: DraftLine): number {
   return line.quantity * line.unitPriceCents
 }

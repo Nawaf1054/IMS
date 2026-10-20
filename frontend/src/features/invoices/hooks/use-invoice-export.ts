@@ -1,3 +1,4 @@
+/** Download helpers for invoices: the Excel export of the list and a single invoice's PDF. */
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -6,6 +7,7 @@ import { saveBlob } from '@/lib/download'
 import { invoicesApi } from '../api/invoices.api'
 import type { InvoiceListParams } from '../types'
 
+/** Exports the filtered invoice list to Excel; `exporting` is true while it runs. */
 export function useInvoiceExport() {
   const [exporting, setExporting] = useState(false)
 
@@ -25,6 +27,7 @@ export function useInvoiceExport() {
   return { exportInvoices, exporting }
 }
 
+/** Downloads one invoice as a PDF; `downloading` is true while it runs. */
 export function useInvoicePdf() {
   const [downloading, setDownloading] = useState(false)
 

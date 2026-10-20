@@ -1,3 +1,4 @@
+/** Dialog for creating or editing a user (AUTH-5). */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -13,13 +14,16 @@ import type { Role, User } from '@/types/models'
 
 import { useCreateUser, useUpdateUser } from '../api/queries'
 
+/** The two roles with a short explanation of each. */
 const ROLES: Array<{ value: Role; label: string; help: string }> = [
   { value: 'staff', label: 'Staff', help: 'Products and stock, create and print invoices, dashboard. No deletes, prices or users.' },
   { value: 'admin', label: 'Admin', help: 'Everything, including users, settings, prices, deletes and cancelling invoices.' },
 ]
 
+/** Loose email shape check; the server has the final say. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Fields shared by create and edit. */
 const baseSchema = z.object({
   name: z.string().trim().min(1, 'Enter the person’s name.'),
   email: z
@@ -30,10 +34,12 @@ const baseSchema = z.object({
   password: z.string(),
 })
 
+/** Create also needs an initial password (10+ characters, as the backend requires). */
 const createSchema = baseSchema.extend({ password: z.string().min(10, 'Use at least 10 characters.') })
 
 type Values = z.infer<typeof baseSchema>
 
+/** Props for UserDialog. */
 interface UserDialogProps {
   /** null: closed · 'new': create · User: edit */
   target: User | 'new' | null
@@ -55,6 +61,7 @@ export function UserDialog({ target, currentUserId, onClose }: UserDialogProps) 
   )
 }
 
+/** The user form. Admins can't change their own role. */
 function UserForm({ isCreate, user, isSelf, onClose }: { isCreate: boolean; user: User | null; isSelf: boolean; onClose: () => void }) {
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()

@@ -27,28 +27,34 @@ YEAR = numbering.invoice_year(utcnow(), get_settings().business_tz)
 
 
 def number(sequence: int) -> str:
+    """The invoice number for this year's `sequence`."""
     return f"INV-{YEAR}-{sequence:05d}"
 
 
 def set_tax_rate(db: Session, rate: str) -> None:
+    """Saves the tax rate setting."""
     settings_service.update(db, BusinessSettingsUpdate(tax_rate=rate))
 
 
 def sell(client: TestClient, headers: dict[str, str], *lines: tuple[Product, int], **body: Any) -> Any:
+    """POSTs an invoice with the given (product, quantity) lines."""
     items = [{"product_id": product.id, "quantity": quantity} for product, quantity in lines]
     return client.post(URL, json={"items": items} | body, headers=headers)
 
 
 def quantity_of(db: Session, product: Product) -> int:
+    """The product's current quantity, re-read from the database."""
     db.refresh(product)
     return product.quantity
 
 
 def invoice_count(db: Session) -> int:
+    """How many invoices exist."""
     return db.scalar(select(func.count()).select_from(Invoice)) or 0
 
 
 def movement_count(db: Session) -> int:
+    """How many stock movements exist."""
     return db.scalar(select(func.count()).select_from(StockMovement)) or 0
 
 
@@ -338,6 +344,42 @@ def test_unknown_invoice(client: TestClient, admin_headers: dict[str, str]) -> N
         assert (response.status_code, response.json()) == (404, expected)
 
 
+def test_repeated_product_with_different_prices_is_rejected(
+    client: TestClient, db: Session, admin_headers: dict[str, str]
+) -> None:
+    """Merging the two lines would silently drop one of the admin's prices."""
+    product = create_product(db, name="Drill", sell_price="100", quantity=10)
+    body = {
+        "items": [
+            {"product_id": product.id, "quantity": 1, "unit_price": "90"},
+            {"product_id": product.id, "quantity": 1},
+        ]
+    }
+    response = client.post("/api/v1/invoices", json=body, headers=admin_headers)
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Drill is on more than one line with different prices. Use one line per product.",
+        "code": "INVALID_PRICE",
+    }
+    db.refresh(product)
+    assert product.quantity == 10
+
+
+def test_repeated_product_at_the_same_price_is_merged(
+    client: TestClient, db: Session, admin_headers: dict[str, str]
+) -> None:
+    product = create_product(db, sell_price="100", quantity=10)
+    body = {
+        "items": [
+            {"product_id": product.id, "quantity": 1, "unit_price": "100"},
+            {"product_id": product.id, "quantity": 2},
+        ]
+    }
+    response = client.post("/api/v1/invoices", json=body, headers=admin_headers)
+    assert response.status_code == 200, response.json()
+    assert [(i["quantity"], i["line_total"]) for i in response.json()["items"]] == [(3, "300.00")]
+
+
 def test_invoices_cannot_be_edited_or_deleted() -> None:
     """INV-6: the only change after creation is cancelling."""
     invoice_paths = {path: set(ops) for path, ops in app.openapi()["paths"].items() if "/invoices" in path}
@@ -348,6 +390,8 @@ def test_invoices_cannot_be_edited_or_deleted() -> None:
         "/api/v1/invoices/{invoice_id}": {"get"},
         "/api/v1/invoices/{invoice_id}/cancel": {"post"},
         "/api/v1/invoices/{invoice_id}/pdf": {"get"},
+        # Read-only Excel download (EXP-3).
+        "/api/v1/exports/invoices": {"get"},
     }
 
 
@@ -355,15 +399,18 @@ def test_invoices_cannot_be_edited_or_deleted() -> None:
 
 
 def at(day: int, hour: int = 12) -> datetime:
+    """A UTC timestamp in October 2026."""
     return datetime(2026, 10, day, hour, tzinfo=UTC)
 
 
 def numbers(response: Any) -> list[str]:
+    """The invoice numbers in a list response, in order."""
     return [i["invoice_number"] for i in response.json()["items"]]
 
 
 @pytest.fixture
 def three_invoices(db: Session, staff: Profile) -> list[Invoice]:
+    """Three invoices on 1, 19 and 20 October (business time)."""
     product = create_product(db, sell_price="10", quantity=100)
     return [
         create_invoice(db, staff, [(product, 1)], customer_name="Saad Contracting", created_at=at(1)),

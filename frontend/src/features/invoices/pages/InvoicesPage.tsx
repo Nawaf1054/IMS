@@ -1,3 +1,4 @@
+/** /invoices: invoice list with search, status and date filters, header totals and Excel export. */
 import { DownloadIcon, PlusIcon, ReceiptTextIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -27,10 +28,12 @@ import { useInvoiceExport } from '../hooks/use-invoice-export'
 
 type StatusFilter = InvoiceStatus | 'ALL'
 
+/** The customer name, or a muted "Walk-in customer". */
 function Customer({ invoice }: { invoice: InvoiceSummary }) {
   return <span className={cn(!invoice.customer_name && 'text-muted-foreground')}>{invoice.customer_name ?? 'Walk-in customer'}</span>
 }
 
+/** Filterable, paged invoice list (INV-7). */
 export function InvoicesPage() {
   const money = useMoney()
   const [searchDraft, setSearchDraft] = useState('')

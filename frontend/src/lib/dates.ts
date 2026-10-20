@@ -1,10 +1,12 @@
 /** Calendar helpers. Dates on the wire are ISO dates (YYYY-MM-DD) in local business time. */
 
+/** An inclusive range of ISO dates. */
 export interface DateRange {
   start: string
   end: string
 }
 
+/** A Date as YYYY-MM-DD in the browser's local time. */
 export function toISODate(date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -12,11 +14,13 @@ export function toISODate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+/** YYYY-MM-DD as a local-midnight Date. */
 export function parseISODate(value: string): Date {
   const [y, m, d] = value.split('-').map(Number)
   return new Date(y, m - 1, d)
 }
 
+/** A copy of `date` moved by `days` (negative goes back). */
 export function addDays(date: Date, days: number): Date {
   const next = new Date(date)
   next.setDate(next.getDate() + days)
@@ -29,14 +33,18 @@ export function daysInRange(range: DateRange): number {
   return Math.round(ms / 86_400_000) + 1
 }
 
+/** Ids of the quick date ranges. */
 export type RangePresetId = '7D' | '30D' | '90D' | 'MTD'
 
+/** A quick date range: id, label and how to compute it from today. */
 export interface RangePreset {
   id: RangePresetId
   label: string
+  /** The range's start and end as of `today`. */
   range: (today: Date) => DateRange
 }
 
+/** The quick ranges offered by date pickers. */
 export const RANGE_PRESETS: RangePreset[] = [
   { id: '7D', label: 'Last 7 days', range: (t) => ({ start: toISODate(addDays(t, -6)), end: toISODate(t) }) },
   { id: '30D', label: 'Last 30 days', range: (t) => ({ start: toISODate(addDays(t, -29)), end: toISODate(t) }) },
@@ -48,6 +56,7 @@ export const RANGE_PRESETS: RangePreset[] = [
   },
 ]
 
+/** The dates of a quick range as of `today` (defaults to the last 30 days). */
 export function presetRange(id: RangePresetId, today = new Date()): DateRange {
   const preset = RANGE_PRESETS.find((p) => p.id === id) ?? RANGE_PRESETS[1]
   return preset.range(today)

@@ -1,3 +1,4 @@
+/** /stock: all stock movements with type and date filters, Excel export and the new-movement sheet. */
 import { ArrowLeftRightIcon, DownloadIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -23,6 +24,7 @@ import { NewMovementSheet } from '../components/NewMovementSheet'
 
 type TypeFilter = MovementType | 'ALL'
 
+/** Movement type filter chips. */
 const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'ALL', label: 'All types' },
   { value: 'IN', label: 'IN' },
@@ -31,6 +33,7 @@ const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'SALE', label: 'Sale' },
 ]
 
+/** Movement list (STK-5). `?new=1&product=…&type=…` opens the form pre-filled. */
 export function StockPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [range, setRange] = useState<DateRange>(() => presetRange('30D'))

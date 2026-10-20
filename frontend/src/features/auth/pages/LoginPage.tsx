@@ -1,3 +1,4 @@
+/** /login: email and password sign-in through Supabase Auth. */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -15,8 +16,10 @@ import { isApiError } from '@/lib/api-client'
 
 import { useAuth } from '../hooks/use-auth'
 
+/** Loose email shape check; the server has the final say. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Sign-in form validation. */
 const schema = z.object({
   email: z
     .string()
@@ -28,6 +31,7 @@ const schema = z.object({
 
 type LoginValues = z.infer<typeof schema>
 
+/** Sign-in form. After signing in it returns to the page the user first asked for. */
 export function LoginPage() {
   const { status, login } = useAuth()
   const navigate = useNavigate()

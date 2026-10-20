@@ -1,3 +1,4 @@
+/** Label, colour and icon for each stock movement type, shared by badges and timelines. */
 import { ArrowDownToLine, ArrowUpFromLine, ReceiptText, SlidersHorizontal } from 'lucide-react'
 
 import type { MovementType } from '@/types/models'

@@ -1,3 +1,4 @@
+/** Vite build and dev-server config (React, Tailwind, the @/ path alias) plus the Vitest test settings. */
 /// <reference types="vitest/config" />
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'

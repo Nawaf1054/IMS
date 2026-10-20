@@ -11,6 +11,8 @@ from app.modules.categories.models import Category
 
 
 class Product(IdMixin, TimestampMixin, Base):
+    """Something the business sells. `quantity` changes only through stock movements (PRD-4)."""
+
     __tablename__ = "products"
     __table_args__ = (
         CheckConstraint("cost_price >= 0", name="cost_price_non_negative"),

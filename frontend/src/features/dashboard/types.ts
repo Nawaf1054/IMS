@@ -1,3 +1,4 @@
+/** Response types for the dashboard endpoints (/dashboard). Figures come from the backend's SQL. */
 import type { Money } from '@/types/api'
 
 /** GET /dashboard/kpis: current figures, independent of the date filter (DSH-1). */
@@ -18,8 +19,10 @@ export interface DashboardKpis {
   out_of_stock_count: number
 }
 
+/** Bucket size of the revenue chart. */
 export type Granularity = 'daily' | 'weekly' | 'monthly'
 
+/** One chart bucket: its first and last day, revenue and invoice count. */
 export interface SalesPoint {
   period_start: string
   period_end: string

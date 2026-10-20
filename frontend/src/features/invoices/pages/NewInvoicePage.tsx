@@ -1,3 +1,4 @@
+/** /invoices/new: build an invoice line by line with live totals, then save it (INV-1 … INV-5). */
 import { CircleAlertIcon, MinusIcon, PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -21,12 +22,14 @@ import { useCreateInvoice, useNextInvoiceNumber } from '../api/queries'
 import { ProductSuggestions } from '../components/ProductSuggestions'
 import { computeTotals } from '../utils/totals'
 
+/** One draft line: the product, the typed quantity and (admins) a typed unit price. */
 interface Line {
   product: Product
   quantity: string
   unitPrice: string
 }
 
+/** What's wrong with a draft line (bad quantity, not enough stock, bad price), or null. */
 function lineError(line: Line): string | null {
   const qty = Number(line.quantity)
   if (!/^\d+$/.test(line.quantity) || qty < 1) return 'Enter a quantity of at least 1.'
@@ -35,6 +38,7 @@ function lineError(line: Line): string | null {
   return null
 }
 
+/** The invoice editor. The backend re-checks stock and prices when it saves. */
 export function NewInvoicePage() {
   const navigate = useNavigate()
   const isAdmin = useIsAdmin()

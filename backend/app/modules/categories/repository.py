@@ -8,18 +8,22 @@ from app.modules.products.models import Product
 
 
 def list_all(db: Session) -> list[Category]:
+    """Every category, in creation order."""
     return list(db.scalars(select(Category).order_by(Category.id)))
 
 
 def get(db: Session, category_id: int) -> Category | None:
+    """The category with this id, or None."""
     return db.get(Category, category_id)
 
 
 def get_by_name(db: Session, name: str) -> Category | None:
+    """The category with this name, ignoring case, or None."""
     return db.scalar(select(Category).where(func.lower(Category.name) == name.lower()))
 
 
 def children(db: Session, category_id: int) -> list[Category]:
+    """The subcategories of a category."""
     return list(db.scalars(select(Category).where(Category.parent_id == category_id).order_by(Category.id)))
 
 
@@ -30,12 +34,14 @@ def product_counts(db: Session) -> dict[int, int]:
 
 
 def count_products_in(db: Session, category_ids: list[int]) -> int:
+    """How many products (active or not) are assigned to any of these categories."""
     if not category_ids:
         return 0
     return db.scalar(select(func.count()).where(Product.category_id.in_(category_ids))) or 0
 
 
 def add(db: Session, category: Category) -> Category:
+    """Stages a new category and flushes it so it gets an id. Doesn't commit."""
     db.add(category)
     db.flush()
     return category

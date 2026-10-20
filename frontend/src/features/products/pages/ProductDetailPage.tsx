@@ -1,3 +1,4 @@
+/** /products/:id: product details, stock level, 30-day sales and movement history. */
 import { ArrowLeftRightIcon, PackageXIcon, PencilIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -25,6 +26,7 @@ import { StockLevelChart } from '../components/StockLevelChart'
 
 type TypeFilter = MovementType | 'ALL'
 
+/** Movement type filter chips. */
 const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'ALL', label: 'All' },
   { value: 'IN', label: 'IN' },
@@ -33,6 +35,7 @@ const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'SALE', label: 'Sale' },
 ]
 
+/** The product page. Admins can edit; everyone can record a movement. */
 export function ProductDetailPage() {
   const id = Number(useParams().id)
   const isAdmin = useIsAdmin()

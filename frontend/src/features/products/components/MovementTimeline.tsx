@@ -1,3 +1,4 @@
+/** A product's stock history as a vertical timeline. */
 import { Link } from 'react-router'
 
 import { MOVEMENT_STYLES } from '@/components/common/movement-styles'
@@ -5,6 +6,7 @@ import { formatRelativeDateTime, formatSignedQuantity } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { StockMovement } from '@/types/models'
 
+/** Plain-language summary of a movement, e.g. "Sold 3" or "Received 20". */
 function title(movement: StockMovement): string {
   const amount = Math.abs(movement.quantity)
   switch (movement.type) {

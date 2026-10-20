@@ -6,10 +6,11 @@ from decimal import Decimal
 
 from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, lazyload, selectinload
 
 from app.common.search import LIKE_ESCAPE, contains_pattern
-from app.modules.invoices.models import Invoice, InvoiceSequence, InvoiceStatus
+from app.modules.invoices.models import Invoice, InvoiceItem, InvoiceSequence, InvoiceStatus
+from app.modules.users.models import Profile
 
 
 def _created_between(since: datetime | None, until: datetime | None) -> list[ColumnElement[bool]]:
@@ -22,6 +23,29 @@ def _created_between(since: datetime | None, until: datetime | None) -> list[Col
     return conditions
 
 
+def _list_conditions(
+    *,
+    search: str | None,
+    status: InvoiceStatus | None,
+    since: datetime | None,
+    until: datetime | None,
+    walk_in_label: str,
+) -> list[ColumnElement[bool]]:
+    """WHERE clauses for the invoice filters (INV-7)."""
+    conditions = _created_between(since, until)
+    if search:
+        pattern = contains_pattern(search)
+        conditions.append(
+            or_(
+                Invoice.invoice_number.ilike(pattern, escape=LIKE_ESCAPE),
+                func.coalesce(Invoice.customer_name, walk_in_label).ilike(pattern, escape=LIKE_ESCAPE),
+            )
+        )
+    if status is not None:
+        conditions.append(Invoice.status == status)
+    return conditions
+
+
 def list_query(
     *,
     search: str | None = None,
@@ -30,23 +54,80 @@ def list_query(
     until: datetime | None = None,
     walk_in_label: str,
 ) -> Select[Invoice]:
-    """Newest first."""
-    stmt = select(Invoice).where(*_created_between(since, until))
-    if search:
-        pattern = contains_pattern(search)
-        stmt = stmt.where(
-            or_(
-                Invoice.invoice_number.ilike(pattern, escape=LIKE_ESCAPE),
-                func.coalesce(Invoice.customer_name, walk_in_label).ilike(pattern, escape=LIKE_ESCAPE),
-            )
+    """Invoices matching the filters, newest first.
+
+    The list only needs each invoice's line count, so line items are loaded without their
+    products (and the products' categories), and the cancelling user isn't loaded at all.
+    """
+    conditions = _list_conditions(
+        search=search, status=status, since=since, until=until, walk_in_label=walk_in_label
+    )
+    return (
+        select(Invoice)
+        .where(*conditions)
+        .options(lazyload(Invoice.cancelled_by), selectinload(Invoice.items).lazyload("*"))
+        .order_by(Invoice.created_at.desc(), Invoice.id.desc())
+    )
+
+
+@dataclass(frozen=True)
+class ExportRow:
+    """One invoice as a row of the invoices export (EXP-3)."""
+
+    invoice_number: str
+    created_at: datetime
+    customer_name: str
+    item_count: int
+    subtotal: Decimal
+    discount: Decimal
+    tax_amount: Decimal
+    total: Decimal
+    status: InvoiceStatus
+    user_name: str
+
+
+def export_rows(
+    db: Session,
+    *,
+    search: str | None,
+    status: InvoiceStatus | None,
+    since: datetime | None,
+    until: datetime | None,
+    walk_in_label: str,
+    limit: int,
+) -> list[ExportRow]:
+    """Plain column values for the invoices export, newest first, at most `limit` rows."""
+    item_count = (
+        select(func.count(InvoiceItem.id)).where(InvoiceItem.invoice_id == Invoice.id).scalar_subquery()
+    )
+    conditions = _list_conditions(
+        search=search, status=status, since=since, until=until, walk_in_label=walk_in_label
+    )
+    stmt = (
+        select(
+            Invoice.invoice_number,
+            Invoice.created_at,
+            func.coalesce(Invoice.customer_name, walk_in_label).label("customer_name"),
+            item_count.label("item_count"),
+            Invoice.subtotal,
+            Invoice.discount,
+            Invoice.tax_amount,
+            Invoice.total,
+            Invoice.status,
+            Profile.name.label("user_name"),
         )
-    if status is not None:
-        stmt = stmt.where(Invoice.status == status)
-    return stmt.order_by(Invoice.created_at.desc(), Invoice.id.desc())
+        .join(Profile, Invoice.user_id == Profile.id)
+        .where(*conditions)
+        .order_by(Invoice.created_at.desc(), Invoice.id.desc())
+        .limit(limit)
+    )
+    return [ExportRow(**row._asdict()) for row in db.execute(stmt)]
 
 
 @dataclass(frozen=True)
 class StatsRow:
+    """Counts and totals of completed and cancelled invoices in a period."""
+
     completed_count: int
     completed_total: Decimal
     cancelled_count: int
@@ -54,6 +135,7 @@ class StatsRow:
 
 
 def stats(db: Session, since: datetime | None, until: datetime | None) -> StatsRow:
+    """Summary figures for the invoices list header, in one query."""
     completed = Invoice.status == InvoiceStatus.COMPLETED
     cancelled = Invoice.status == InvoiceStatus.CANCELLED
     stmt = select(
@@ -67,6 +149,7 @@ def stats(db: Session, since: datetime | None, until: datetime | None) -> StatsR
 
 
 def get(db: Session, invoice_id: int) -> Invoice | None:
+    """The invoice with this id (items and users loaded), or None."""
     return db.get(Invoice, invoice_id)
 
 
@@ -83,6 +166,7 @@ def get_for_update(db: Session, invoice_id: int) -> Invoice | None:
 
 
 def add(db: Session, invoice: Invoice) -> Invoice:
+    """Stages a new invoice with its items and flushes it so it gets an id. Doesn't commit."""
     db.add(invoice)
     db.flush()
     return invoice
@@ -103,4 +187,5 @@ def take_number(db: Session, year: int) -> int:
 
 
 def last_number(db: Session, year: int) -> int:
+    """The last sequence number issued in `year` (0 if none yet)."""
     return db.scalar(select(InvoiceSequence.last_number).where(InvoiceSequence.year == year)) or 0

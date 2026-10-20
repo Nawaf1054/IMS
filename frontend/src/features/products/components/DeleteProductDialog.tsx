@@ -1,3 +1,4 @@
+/** Delete confirmation for a product; explains that invoiced products are deactivated instead (PRD-2). */
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'

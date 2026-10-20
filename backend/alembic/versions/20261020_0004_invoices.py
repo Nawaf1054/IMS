@@ -20,6 +20,7 @@ TABLES = ("invoices", "invoice_items", "invoice_sequences")
 
 
 def upgrade() -> None:
+    """Creates invoices, invoice_items and invoice_sequences, and links movements to invoices."""
     op.create_table(
         "invoices",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -106,6 +107,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Removes the invoice tables and the movements' link to them."""
     op.drop_index("ix_stock_movements_invoice_id", table_name="stock_movements")
     op.drop_constraint("fk_stock_movements_invoice_id_invoices", "stock_movements", type_="foreignkey")
     op.drop_column("stock_movements", "invoice_id")

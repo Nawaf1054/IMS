@@ -19,6 +19,7 @@ movement_type = sa.Enum("IN", "OUT", "ADJUSTMENT", "SALE", name="movement_type")
 
 
 def upgrade() -> None:
+    """Creates the stock_movements table and the movement_type enum."""
     op.create_table(
         "stock_movements",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -51,5 +52,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drops the stock_movements table and the movement_type enum."""
     op.drop_table("stock_movements")
     movement_type.drop(op.get_bind(), checkfirst=True)

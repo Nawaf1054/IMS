@@ -1,3 +1,4 @@
+/** Card container used for page sections, with an optional title row. */
 import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -15,6 +16,7 @@ interface PanelHeaderProps {
   className?: string
 }
 
+/** A panel's title, optional description and actions on the right. */
 export function PanelHeader({ title, description, actions, id, className }: PanelHeaderProps) {
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-3', className)}>

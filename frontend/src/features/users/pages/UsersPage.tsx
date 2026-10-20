@@ -1,3 +1,4 @@
+/** /users (admin): user list with roles and status; add, edit, deactivate and reactivate. */
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -17,6 +18,7 @@ import type { User } from '@/types/models'
 import { useUpdateUser, useUsers } from '../api/queries'
 import { UserDialog } from '../components/UserDialog'
 
+/** User management. Deactivating asks for confirmation; you can't deactivate yourself. */
 export function UsersPage() {
   const me = useCurrentUser()
   const { data: users, isPending, isError, error, refetch } = useUsers()

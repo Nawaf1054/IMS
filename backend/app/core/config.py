@@ -13,6 +13,8 @@ ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
+    """Every setting the backend reads from the environment or the repository-root .env."""
+
     model_config = SettingsConfigDict(env_file=ROOT_ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
     environment: str = "development"
@@ -53,6 +55,7 @@ class Settings(BaseSettings):
     @field_validator("business_timezone")
     @classmethod
     def _known_timezone(cls, value: str) -> str:
+        """Rejects a BUSINESS_TIMEZONE that isn't a valid IANA zone name."""
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError) as exc:
@@ -61,21 +64,26 @@ class Settings(BaseSettings):
 
     @property
     def business_tz(self) -> ZoneInfo:
+        """BUSINESS_TIMEZONE as a tzinfo object."""
         return ZoneInfo(self.business_timezone)
 
     @property
     def cors_origin_list(self) -> list[str]:
+        """CORS_ORIGINS split into a list of origins."""
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @property
     def supabase_auth_url(self) -> str:
+        """Base URL of Supabase Auth, e.g. http://127.0.0.1:54321/auth/v1."""
         return f"{self.supabase_url.rstrip('/')}/auth/v1"
 
     @property
     def jwt_issuer(self) -> str:
+        """The `iss` value access tokens must carry."""
         return self.supabase_jwt_issuer.rstrip("/") or self.supabase_auth_url
 
 
 @lru_cache
 def get_settings() -> Settings:
+    """The settings, read once and cached for the life of the process."""
     return Settings()

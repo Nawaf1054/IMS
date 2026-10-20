@@ -1,3 +1,4 @@
+/** Dashboard revenue line chart (DSH-2) with the previous period for comparison. */
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts'
 
 import { Panel, PanelHeader } from '@/components/common/Panel'
@@ -21,6 +22,7 @@ const config = {
   previous: { label: 'Previous period', color: 'var(--chart-6)' },
 } satisfies ChartConfig
 
+/** X-axis / tooltip label for a point: a day, a week span or a month. */
 function pointLabel(point: SalesPoint, granularity: Granularity): string {
   const start = parseISODate(point.period_start)
   if (granularity === 'daily') return formatShortDate(start)

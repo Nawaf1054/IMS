@@ -1,3 +1,4 @@
+/** Dashboard KPI cards (DSH-1): products, stock value, today's and this month's sales, low stock. */
 import { TriangleAlertIcon } from 'lucide-react'
 
 import { StatCard } from '@/components/common/StatCard'
@@ -7,6 +8,7 @@ import { cn } from '@/lib/utils'
 
 import { useKpis } from '../api/queries'
 
+/** Green or red percentage change versus the previous figure (nothing if there was none). */
 function Change({ current, previous }: { current: string; previous: string }) {
   const change = formatChange(Number(current), Number(previous))
   if (!change) return null
