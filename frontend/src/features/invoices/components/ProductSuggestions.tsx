@@ -1,3 +1,4 @@
+/** Product search tiles on the new-invoice screen; clicking one adds a line. */
 import { SearchIcon } from 'lucide-react'
 import { useState } from 'react'
 

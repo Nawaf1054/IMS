@@ -1,3 +1,4 @@
+/** Small coloured pill for statuses. Tones map to the design tokens. */
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'

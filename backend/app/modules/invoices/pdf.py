@@ -29,6 +29,8 @@ MONTHS = (
 
 
 class PdfUnavailable(AppError):
+    """503: this server can't render PDFs (WeasyPrint's system libraries are missing)."""
+
     status_code = 503
     code = "PDF_UNAVAILABLE"
     detail = "PDF download isn’t available on this server. Use Print instead."
@@ -54,6 +56,7 @@ def format_datetime(at: datetime, tz: tzinfo) -> str:
 def render_html(
     invoice: InvoiceOut, business: BusinessSettingsOut, *, printed_at: datetime, tz: tzinfo
 ) -> str:
+    """Fills the printable invoice template with the invoice and the business details."""
     return TEMPLATES.get_template("invoice.html").render(
         invoice=invoice,
         business=business,
@@ -67,6 +70,7 @@ def render_html(
 
 
 def html_to_pdf(html: str) -> bytes:
+    """Converts the rendered HTML to PDF bytes with WeasyPrint."""
     try:
         # Imported here: it needs system libraries (see the module docstring).
         from weasyprint import HTML

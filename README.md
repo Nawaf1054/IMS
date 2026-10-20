@@ -24,48 +24,49 @@ See [docs/architecture.md](docs/architecture.md) for the full structure and conv
 
 ## Getting started
 
-### Frontend (works today, no backend needed)
+The app always talks to the real backend and database; there is no mock mode. Needs Docker, Node and [uv](https://docs.astral.sh/uv/).
 
-```bash
-cd frontend
-npm install
-npm run dev          # http://localhost:5173
-```
+Implemented: sign-in, users, categories, products, settings, stock movements, invoices with PDF download, Excel exports and the analytics dashboard (M1–M7). The AI assistant (M8) isn't built yet: its page shows a "Coming soon" preview.
 
-The UI runs against an in-browser mock of the API (see [docs/architecture.md](docs/architecture.md#mock-api)). Demo accounts, password `demo1234`:
-
-| Role  | Email |
-|-------|-------|
-| Admin | `fahad@alnoor-supplies.sa` |
-| Staff | `noura@alnoor-supplies.sa` |
-
-| Script | Does |
-|--------|------|
-| `npm run build` | Typecheck + production build |
-| `npm run test` | Vitest (unit tests + app smoke test) |
-| `npm run lint` / `npm run format` | ESLint / Prettier |
-
-### Full stack (backend + Supabase)
-
-Needs Docker, Node and [uv](https://docs.astral.sh/uv/). Implemented so far: sign-in, users, categories, products, settings, stock movements and invoices (M1–M5). Exports, dashboard and the assistant still need the mock until their milestones land. Invoice PDFs use WeasyPrint, which needs the Pango system library: the Docker image includes it, but on Windows without it the PDF endpoint answers `PDF_UNAVAILABLE` (printing from the browser still works). The demo seed records an "Opening stock" movement for each product, so quantities match the design.
+Invoice PDFs use WeasyPrint, which needs the Pango system library. The Docker image includes it; on Windows without it the PDF endpoint answers `PDF_UNAVAILABLE` (printing from the browser still works).
 
 1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
    ```bash
    npx supabase start      # prints API URL, DB URL, publishable/secret keys and JWT secret
    npx supabase status     # shows them again
    ```
-2. **Configure:** copy `.env.example` to `.env`. Fill in `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SEED_ADMIN_PASSWORD`, then set `VITE_USE_MOCKS=false`.
+2. **Configure:** copy `.env.example` to `.env`. Fill in `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SEED_ADMIN_PASSWORD`.
 3. **Backend:**
    ```bash
    cd backend
    uv sync
    uv run alembic upgrade head
-   uv run python -m scripts.seed --demo   # admin from .env + demo accounts, catalog and settings
-   uv run uvicorn app.main:app --reload   # http://localhost:8000/api/docs
+   uv run python -m scripts.seed           # the admin user from .env
+   uv run python -m scripts.seed --demo    # optional: + demo users, catalog, opening stock and settings
+   uv run uvicorn app.main:app --reload    # http://localhost:8000/api/docs
    ```
-4. **Frontend:** `cd frontend && npm run dev`, then sign in with a seeded account.
+4. **Frontend:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev          # http://localhost:5173
+   ```
+   Sign in with the admin from `.env`. With `--demo`, these accounts also exist (password `demo1234`):
+
+   | Role  | Email |
+   |-------|-------|
+   | Admin | `admin@a.com` |
+   | Staff | `staff@a.com`, `majed@alnoor-supplies.sa` |
+
+   The demo seed records an "Opening stock" movement per product, so quantities match the design. It creates no invoices, so the dashboard's sales figures start at zero.
 
 Or run steps 3–4 in containers: `docker compose up --build` (Supabase still runs via `npx supabase start`).
+
+| Frontend script | Does |
+|-----------------|------|
+| `npm run build` | Typecheck + production build |
+| `npm run test` | Vitest unit tests |
+| `npm run lint` / `npm run format` | ESLint / Prettier |
 
 | Backend command | Does |
 |-----------------|------|

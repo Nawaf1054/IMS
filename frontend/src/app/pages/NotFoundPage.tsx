@@ -1,9 +1,11 @@
+/** Screen for URLs that don't match any route. */
 import { CompassIcon } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Page } from '@/components/layout/Page'
 
+/** "Page not found" with a link back to the dashboard. */
 export function NotFoundPage() {
   return (
     <Page width="lg">

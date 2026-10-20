@@ -1,3 +1,4 @@
+/** Labelled form field with help text and an accessible error message. */
 import { type ReactNode, useId } from 'react'
 
 import { cn } from '@/lib/utils'

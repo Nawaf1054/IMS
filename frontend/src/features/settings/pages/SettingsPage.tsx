@@ -1,3 +1,4 @@
+/** /settings (admin): business name, address, currency and tax rate, with a worked tax example. */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -19,6 +20,7 @@ import type { BusinessSettings } from '@/types/models'
 
 import { useSettings, useUpdateSettings } from '../api/queries'
 
+/** Currencies the business can choose (must match the backend's list). */
 const CURRENCIES = [
   { code: 'SAR', name: 'Saudi riyal' },
   { code: 'AED', name: 'UAE dirham' },
@@ -26,6 +28,7 @@ const CURRENCIES = [
   { code: 'USD', name: 'US dollar' },
 ]
 
+/** Settings form validation. */
 const schema = z.object({
   business_name: z.string().trim().min(1, 'Business name is required. It appears on every invoice.'),
   business_address: z.string(),
@@ -40,8 +43,10 @@ type Values = z.infer<typeof schema>
 
 /** "0.15" ↔ "15" without floating-point noise. */
 const toPercent = (rate: string) => String(Number((Number(rate) * 100).toFixed(2)))
+/** Percent from the form → tax rate fraction, e.g. "15" → "0.15". */
 const toRate = (percent: string) => String(Number((Number(percent) / 100).toFixed(4)))
 
+/** Form values for the saved settings. */
 const toValues = (s: BusinessSettings): Values => ({
   business_name: s.business_name,
   business_address: s.business_address,
@@ -51,6 +56,7 @@ const toValues = (s: BusinessSettings): Values => ({
 
 const EXAMPLE_SUBTOTAL = 125_000
 
+/** The settings form. Saving updates the cached settings right away. */
 export function SettingsPage() {
   const { data: settings, isPending, isError, error, refetch } = useSettings()
   const update = useUpdateSettings()

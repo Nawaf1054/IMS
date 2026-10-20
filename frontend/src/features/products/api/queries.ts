@@ -1,15 +1,21 @@
+/** TanStack Query hooks and cache keys for products. Mutations refresh the cached data they affect. */
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { ProductInput, ProductListParams, ProductMovementParams } from '../types'
 import { productsApi } from './products.api'
 
+/** Cache keys for product data. */
 export const productKeys = {
   all: ['products'] as const,
+  /** Key for one filtered page of products. */
   list: (params: ProductListParams) => ['products', 'list', params] as const,
+  /** Key for one product. */
   detail: (id: number) => ['products', 'detail', id] as const,
+  /** Key for one page of a product's movements. */
   movements: (id: number, params: ProductMovementParams) => ['products', 'movements', id, params] as const,
 }
 
+/** One page of products; keeps the previous page visible while the next loads. */
 export function useProducts(params: ProductListParams, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: productKeys.list(params),
@@ -19,10 +25,12 @@ export function useProducts(params: ProductListParams, options: { enabled?: bool
   })
 }
 
+/** One product (skipped while the id isn't a number yet). */
 export function useProduct(id: number) {
   return useQuery({ queryKey: productKeys.detail(id), queryFn: () => productsApi.get(id), enabled: Number.isFinite(id) })
 }
 
+/** One page of a product's movement history. */
 export function useProductMovements(id: number, params: ProductMovementParams) {
   return useQuery({
     queryKey: productKeys.movements(id, params),
@@ -40,6 +48,7 @@ export function useLowStockCount() {
   })
 }
 
+/** Refreshes products, categories (product counts) and the dashboard after a change. */
 function useInvalidateCatalog() {
   const queryClient = useQueryClient()
   return () =>
@@ -50,16 +59,19 @@ function useInvalidateCatalog() {
     ])
 }
 
+/** Creates a product. */
 export function useCreateProduct() {
   const invalidate = useInvalidateCatalog()
   return useMutation({ mutationFn: (input: ProductInput) => productsApi.create(input), onSuccess: invalidate })
 }
 
+/** Edits the product with this id. */
 export function useUpdateProduct(id: number) {
   const invalidate = useInvalidateCatalog()
   return useMutation({ mutationFn: (input: Partial<ProductInput>) => productsApi.update(id, input), onSuccess: invalidate })
 }
 
+/** Deletes or deactivates a product. */
 export function useDeleteProduct() {
   const invalidate = useInvalidateCatalog()
   return useMutation({ mutationFn: (id: number) => productsApi.remove(id), onSuccess: invalidate })

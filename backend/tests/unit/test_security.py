@@ -16,21 +16,25 @@ class StaticJwks:
     """Stands in for PyJWKClient: always returns one public key."""
 
     def __init__(self, public_key: ec.EllipticCurvePublicKey):
+        """Wraps the public key as the JWK the verifier will receive."""
         self._jwk = jwt.PyJWK.from_dict(
             {**jwt.algorithms.ECAlgorithm.to_jwk(public_key, as_dict=True), "alg": "ES256", "kid": "k1"}
         )
 
     def get_signing_key_from_jwt(self, token: str) -> jwt.PyJWK:
+        """The same key for any token."""
         return self._jwk
 
 
 @pytest.fixture
 def es256_key() -> ec.EllipticCurvePrivateKey:
+    """A fresh ES256 key pair."""
     return ec.generate_private_key(ec.SECP256R1())
 
 
 @pytest.fixture
 def verifier(es256_key: ec.EllipticCurvePrivateKey) -> TokenVerifier:
+    """A verifier that trusts `es256_key` and the HS256 test secret."""
     return TokenVerifier(get_settings(), jwks=StaticJwks(es256_key.public_key()))
 
 

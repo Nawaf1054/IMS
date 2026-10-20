@@ -1,3 +1,4 @@
+/** Dashboard table of products at or below their minimum quantity (DSH-5). */
 import { CircleCheckIcon } from 'lucide-react'
 import { Link } from 'react-router'
 

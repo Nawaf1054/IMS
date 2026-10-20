@@ -1,3 +1,4 @@
+/** Searchable product dropdown used by the movement form. */
 import { ChevronsUpDownIcon } from 'lucide-react'
 import { useState } from 'react'
 

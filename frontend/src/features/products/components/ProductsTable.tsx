@@ -1,3 +1,4 @@
+/** Product list as a sortable table (desktop) or as cards (narrow screens). */
 import { PencilIcon, Trash2Icon } from 'lucide-react'
 import { Link } from 'react-router'
 
@@ -13,6 +14,7 @@ import type { Product } from '@/types/models'
 import type { ProductSortKey } from '../types'
 import { quantityTone } from '../utils/quantity-tone'
 
+/** Sortable columns, in display order. */
 const COLUMNS: Array<{ key: ProductSortKey; label: string; align?: 'right' }> = [
   { key: 'name', label: 'Product' },
   { key: 'sku', label: 'SKU' },
@@ -22,6 +24,7 @@ const COLUMNS: Array<{ key: ProductSortKey; label: string; align?: 'right' }> = 
   { key: 'quantity', label: 'Quantity', align: 'right' },
 ]
 
+/** Props for ProductsTable. */
 interface ProductsTableProps {
   products: Product[]
   loading: boolean
@@ -32,6 +35,7 @@ interface ProductsTableProps {
   onDelete: (product: Product) => void
 }
 
+/** Sortable product table with stock status and admin actions. */
 export function ProductsTable({ products, loading, sort, order, onSort, isAdmin, onDelete }: ProductsTableProps) {
   const money = useMoney()
   return (

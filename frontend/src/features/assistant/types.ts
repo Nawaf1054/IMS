@@ -1,5 +1,7 @@
+/** Request and response types for the AI assistant endpoints (/ai). */
 import type { AiQuota } from '@/types/models'
 
+/** One message of the conversation sent to POST /ai/chat. */
 export interface ChatTurn {
   role: 'user' | 'assistant'
   content: string
@@ -11,6 +13,7 @@ export interface ChatSource {
   label: string
 }
 
+/** The assistant's answer: text, optional figure rows and the tools it used. */
 export interface AssistantMessage {
   role: 'assistant'
   content: string
@@ -24,6 +27,7 @@ export interface ChatReply {
   quota: AiQuota
 }
 
+/** Colour hint for a figure in the insights report. */
 export type FigureTone = 'positive' | 'negative' | 'warning'
 
 /** POST /ai/insights: figures are computed by IMS; the LLM only writes the sections (AI-4). */

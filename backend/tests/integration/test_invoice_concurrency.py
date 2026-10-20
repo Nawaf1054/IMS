@@ -32,6 +32,8 @@ YEAR = numbering.invoice_year(utcnow(), get_settings().business_tz)
 
 @dataclass
 class Shop:
+    """Ids of the data the race tests share across threads."""
+
     user_id: int
     product_ids: list[int]
 

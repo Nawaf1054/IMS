@@ -20,14 +20,17 @@ URL = "/api/v1/stock-movements"
 
 
 def record(client: TestClient, headers: dict[str, str], product: Product, **body: Any) -> Any:
+    """POSTs a movement for `product`."""
     return client.post(URL, json={"product_id": product.id} | body, headers=headers)
 
 
 def movement_count(db: Session, product: Product) -> int:
+    """How many movements the product has."""
     return db.scalar(select(func.count()).where(StockMovement.product_id == product.id)) or 0
 
 
 def quantity_of(db: Session, product: Product) -> int:
+    """The product's current quantity, re-read from the database."""
     db.refresh(product)
     return product.quantity
 
@@ -213,6 +216,8 @@ def test_movements_are_immutable() -> None:
     assert movement_paths == {
         "/api/v1/stock-movements": {"get", "post"},
         "/api/v1/products/{product_id}/movements": {"get"},
+        # Read-only Excel download (EXP-2).
+        "/api/v1/exports/movements": {"get"},
     }
 
 
@@ -266,10 +271,12 @@ def test_deleting_a_product_removes_its_history(
 
 
 def ids(response: Any) -> list[int]:
+    """The movement ids in a list response, in order."""
     return [m["id"] for m in response.json()["items"]]
 
 
 def at(day: int, hour: int = 12, minute: int = 0) -> datetime:
+    """A UTC timestamp in October 2026."""
     return datetime(2026, 10, day, hour, minute, tzinfo=UTC)
 
 

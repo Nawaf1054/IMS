@@ -8,6 +8,8 @@ dependencies = [
     "fastapi>=0.115",
     "httpx>=0.28",
     "jinja2>=3.1.6",
+    "lxml>=6.0",
+    "openpyxl>=3.1.5",
     "psycopg[binary]>=3.2",
     "pydantic-settings>=2.6",
     "pydantic[email]>=2.10",
@@ -24,6 +26,7 @@ dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "ruff>=0.8",
+    "types-openpyxl>=3.1.5.20261017",
 ]
 
 [tool.uv]

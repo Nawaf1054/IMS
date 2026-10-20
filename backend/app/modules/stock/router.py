@@ -19,11 +19,13 @@ def list_movements(
     filters: Annotated[MovementFilters, Query()],
     params: PageParams = Depends(page_params),
 ) -> Page[MovementOut]:
+    """All movements, filterable by product, type and dates (STK-5)."""
     return service.list_movements(db, filters, params)
 
 
 @router.post("/stock-movements", response_model=MovementOut)
 def record_movement(data: MovementCreate, db: DbSession, user: CurrentUser) -> MovementOut:
+    """Records an IN, OUT or ADJUSTMENT and updates the quantity (STK-3)."""
     return service.record_movement(db, user, data)
 
 
@@ -35,4 +37,5 @@ def list_product_movements(
     filters: Annotated[ProductMovementFilters, Query()],
     params: PageParams = Depends(page_params),
 ) -> Page[MovementOut]:
+    """One product's movement history."""
     return service.list_product_movements(db, product_id, filters, params)

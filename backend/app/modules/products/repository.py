@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import Select, distinct, func, or_, select
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session, aliased, contains_eager
 
 from app.common.search import LIKE_ESCAPE, contains_pattern
 from app.modules.categories.models import Category
@@ -15,13 +15,16 @@ from app.modules.products.schemas import ProductFilters
 from app.modules.stock.models import MovementType, StockMovement
 
 
-def list_query(filters: ProductFilters) -> Select[Product]:
-    category = aliased(Category)
-    parent = aliased(Category)
-    stmt = (
-        select(Product)
-        .join(category, Product.category_id == category.id)
-        .outerjoin(parent, category.parent_id == parent.id)
+def _filtered[*Ts](
+    stmt: Select[*Ts], filters: ProductFilters, category: type[Category], parent: type[Category]
+) -> Select[*Ts]:
+    """Adds the category joins, the PRD-3 filters and the chosen sort order to `stmt`.
+
+    `category` is the product's own category and `parent` its (optional) parent category; both are
+    aliases so sorting and filtering can refer to them by name.
+    """
+    stmt = stmt.join(category, Product.category_id == category.id).outerjoin(
+        parent, category.parent_id == parent.id
     )
 
     if filters.search and filters.search.strip():
@@ -52,7 +55,55 @@ def list_query(filters: ProductFilters) -> Select[Product]:
     return stmt.order_by(column.desc() if filters.order == "desc" else column.asc(), Product.id)
 
 
+def list_query(filters: ProductFilters) -> Select[Product]:
+    """Products matching the list filters (PRD-3), with their category and parent loaded from
+    the same joins the filters use (instead of a second, eager-loading copy of them)."""
+    category = aliased(Category)
+    parent = aliased(Category)
+    stmt = _filtered(select(Product), filters, category, parent)
+    return stmt.options(
+        contains_eager(Product.category.of_type(category)).contains_eager(category.parent.of_type(parent))
+    )
+
+
+@dataclass(frozen=True)
+class ExportRow:
+    """One product as a row of the products export (EXP-1)."""
+
+    name: str
+    sku: str
+    category_path: str
+    cost_price: Decimal
+    sell_price: Decimal
+    quantity: int
+    min_quantity: int
+    stock_value: Decimal
+    is_low_stock: bool
+    is_active: bool
+
+
+def export_rows(db: Session, filters: ProductFilters, limit: int) -> list[ExportRow]:
+    """Plain column values for the products export, in the list's order, at most `limit` rows."""
+    category = aliased(Category)
+    parent = aliased(Category)
+    stmt = select(
+        Product.name,
+        Product.sku,
+        func.concat_ws(" › ", parent.name, category.name).label("category_path"),
+        Product.cost_price,
+        Product.sell_price,
+        Product.quantity,
+        Product.min_quantity,
+        (Product.quantity * Product.cost_price).label("stock_value"),
+        (Product.quantity <= Product.min_quantity).label("is_low_stock"),
+        Product.is_active,
+    )
+    rows = db.execute(_filtered(stmt, filters, category, parent).limit(limit))
+    return [ExportRow(**row._asdict()) for row in rows]
+
+
 def get(db: Session, product_id: int) -> Product | None:
+    """The product with this id (category loaded), or None."""
     return db.get(Product, product_id)
 
 
@@ -107,6 +158,8 @@ def invoice_counts(db: Session, product_ids: list[int]) -> dict[int, int]:
 
 @dataclass(frozen=True)
 class SalesRow:
+    """A product's sales over a period."""
+
     quantity: int
     revenue: Decimal
     invoice_count: int
@@ -133,10 +186,12 @@ def sales_since(db: Session, product_id: int, since: datetime) -> SalesRow:
 
 
 def get_by_sku(db: Session, sku: str) -> Product | None:
+    """The product with this SKU (SKUs are stored upper-case), or None."""
     return db.scalar(select(Product).where(Product.sku == sku.upper()))
 
 
 def add(db: Session, product: Product) -> Product:
+    """Stages a new product and flushes it so it gets an id. Doesn't commit."""
     db.add(product)
     db.flush()
     return product

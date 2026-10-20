@@ -1,3 +1,4 @@
+/** Dashboard ranking of the top 10 products by quantity or revenue, with inline bars (DSH-3). */
 import { useState } from 'react'
 import { Link } from 'react-router'
 

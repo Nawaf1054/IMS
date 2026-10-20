@@ -1,3 +1,4 @@
+/** /invoices/:id/print: the invoice alone on the page, ready for the browser's print dialog. */
 import { ArrowLeftIcon, DownloadIcon, PrinterIcon } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 

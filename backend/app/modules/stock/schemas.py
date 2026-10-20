@@ -10,6 +10,8 @@ MAX_NOTE_LENGTH = 1000
 
 
 class MovementOut(BaseModel):
+    """A stock movement as the API returns it."""
+
     id: int
     product_id: int
     product_name: str
@@ -42,6 +44,7 @@ class MovementCreate(BaseModel):
     @field_validator("type", mode="before")
     @classmethod
     def _type(cls, value: object) -> object:
+        """Only the movement type names; anything else is rejected with a clear message."""
         if value not in {t.value for t in MovementType}:
             raise ValueError("Choose a movement type.")
         return value
@@ -49,6 +52,7 @@ class MovementCreate(BaseModel):
     @field_validator("quantity", mode="before")
     @classmethod
     def _quantity(cls, value: object) -> object:
+        """Accepts only real integers, so "5" or 2.5 get a clear error instead of being coerced."""
         # Strict: "5", 2.5 and true are rejected rather than coerced.
         if isinstance(value, bool) or not isinstance(value, int):
             raise ValueError("Quantity must be a whole number.")
@@ -57,6 +61,7 @@ class MovementCreate(BaseModel):
     @field_validator("note")
     @classmethod
     def _note(cls, value: str) -> str:
+        """Trims the note and limits its length."""
         note = value.strip()
         if len(note) > MAX_NOTE_LENGTH:
             raise ValueError(f"Keep the note under {MAX_NOTE_LENGTH} characters.")

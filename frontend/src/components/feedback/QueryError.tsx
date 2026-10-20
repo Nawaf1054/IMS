@@ -1,3 +1,4 @@
+/** Error state for a failed data load, with a retry button. */
 import { CloudOffIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'

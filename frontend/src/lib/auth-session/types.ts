@@ -1,6 +1,6 @@
 /**
- * Where the browser's session lives. With mocks on, the mock API issues tokens; otherwise
- * Supabase Auth does (sign-in, refresh, sign-out) and the backend only verifies them.
+ * Where the browser's session lives. Supabase Auth issues the tokens (sign-in, refresh, sign-out);
+ * the backend only verifies them.
  */
 export interface AuthSession {
   /** Synchronous hint for the first render: is there a stored session worth restoring? */

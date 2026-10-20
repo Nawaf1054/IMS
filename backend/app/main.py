@@ -10,6 +10,7 @@ from app.core.logging import configure_logging
 
 
 def create_app() -> FastAPI:
+    """Builds the FastAPI app: logging, CORS, error handlers and the /api/v1 routes."""
     settings = get_settings()
     configure_logging(settings.log_level)
 

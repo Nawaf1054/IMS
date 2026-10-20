@@ -10,6 +10,8 @@ from app.db.mixins import CreatedAtMixin, IdMixin
 
 
 class Category(IdMixin, CreatedAtMixin, Base):
+    """A product category. Names are unique (ignoring case); `parent_id` makes it a subcategory."""
+
     __tablename__ = "categories"
 
     name: Mapped[str] = mapped_column(String(80), nullable=False)

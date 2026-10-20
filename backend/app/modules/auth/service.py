@@ -15,6 +15,7 @@ from app.modules.users.models import Profile
 
 
 def authenticate(db: Session, verifier: TokenVerifier, token: str | None) -> Profile:
+    """Verifies the token and returns the active profile it belongs to, or raises 401."""
     if not token:
         raise NotAuthenticated()
     claims = verifier.verify(token)

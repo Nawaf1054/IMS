@@ -22,10 +22,12 @@ LAST_ACTIVE_RESOLUTION = timedelta(minutes=5)
 
 
 def email_taken() -> Conflict:
+    """The error for an email another user already has."""
     return Conflict("A user with this email already exists.", code="EMAIL_TAKEN")
 
 
 def _auth_error(exc: AuthAdminError) -> AppError:
+    """Maps a Supabase admin error to the API error the UI understands."""
     if exc.code == "email_exists":
         return email_taken()
     if exc.code == "weak_password":
@@ -35,11 +37,13 @@ def _auth_error(exc: AuthAdminError) -> AppError:
 
 
 def get_active_by_auth_user_id(db: Session, auth_user_id: uuid.UUID) -> Profile | None:
+    """The profile for a Supabase user, if it exists and is active."""
     profile = repository.get_by_auth_user_id(db, auth_user_id)
     return profile if profile and profile.is_active else None
 
 
 def touch_last_active(db: Session, profile: Profile) -> Profile:
+    """Records that the user was active, at most once every few minutes to limit writes."""
     now = utcnow()
     if profile.last_active_at is None or now - profile.last_active_at >= LAST_ACTIVE_RESOLUTION:
         profile.last_active_at = now
@@ -48,6 +52,7 @@ def touch_last_active(db: Session, profile: Profile) -> Profile:
 
 
 def list_users(db: Session, params: PageParams) -> Page[UserOut]:
+    """One page of users."""
     return paginate(db, repository.list_query(), params, UserOut.model_validate)
 
 
@@ -57,6 +62,9 @@ def create_profile(db: Session, *, auth_user_id: uuid.UUID, name: str, email: st
 
 
 def create_user(db: Session, auth_admin: AuthAdmin, data: UserCreate) -> Profile:
+    """Creates the Supabase user, then the profile. If the profile can't be saved, the
+    Supabase user is deleted again so no orphan account is left.
+    """
     if repository.get_by_email(db, data.email):
         raise email_taken()
     if len(data.password) < MIN_PASSWORD_LENGTH:
@@ -88,6 +96,9 @@ def create_user(db: Session, auth_admin: AuthAdmin, data: UserCreate) -> Profile
 def update_user(
     db: Session, auth_admin: AuthAdmin, actor: Profile, user_id: int, data: UserUpdate
 ) -> Profile:
+    """Applies the changes to the profile and, for email or active-flag changes, to Supabase
+    too. Admins can't deactivate themselves or change their own role.
+    """
     user = repository.get(db, user_id)
     if user is None:
         raise NotFound("User not found.")

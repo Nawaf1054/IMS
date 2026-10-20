@@ -1,3 +1,4 @@
+/** / (home): the analytics dashboard. One date range drives every time-based widget (DSH-6). */
 import { useState } from 'react'
 
 import { DateRangePicker } from '@/components/common/DateRangePicker'
@@ -13,6 +14,7 @@ import { TopProductsCard } from '../components/TopProductsCard'
 import type { Granularity } from '../types'
 import { fitGranularity } from '../utils/granularity'
 
+/** Date range controls, KPI cards, revenue chart, category revenue, top products and low stock. */
 export function DashboardPage() {
   const [range, setRange] = useState<DateRange>(() => presetRange('30D'))
   const [granularity, setGranularity] = useState<Granularity>('daily')

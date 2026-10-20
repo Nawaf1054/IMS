@@ -1,3 +1,4 @@
+/** Dashboard donut chart and legend of revenue by category (DSH-4). */
 import { Cell, Pie, PieChart } from 'recharts'
 
 import { Panel, PanelHeader } from '@/components/common/Panel'

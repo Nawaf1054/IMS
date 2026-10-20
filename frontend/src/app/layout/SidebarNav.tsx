@@ -1,3 +1,4 @@
+/** Sidebar navigation: main links, admin links, low-stock badge and the collapse toggle. */
 import { PanelLeftIcon, XIcon } from 'lucide-react'
 import { NavLink } from 'react-router'
 
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils'
 
 import { ADMIN_NAV, MAIN_NAV, type NavItem } from './nav-items'
 
+/** Props for SidebarNav. */
 interface SidebarNavProps {
   collapsed: boolean
   onToggleCollapsed?: () => void
@@ -16,6 +18,7 @@ interface SidebarNavProps {
   onClose?: () => void
 }
 
+/** One sidebar link with its icon, active state and optional low-stock badge. */
 function NavEntry({ item, collapsed, lowStock, onNavigate }: { item: NavItem; collapsed: boolean; lowStock?: number; onNavigate?: () => void }) {
   const Icon = item.icon
   return (

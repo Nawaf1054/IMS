@@ -1,3 +1,4 @@
+/** Segmented button group for picking one option (e.g. daily / weekly / monthly). */
 import { cn } from '@/lib/utils'
 
 export interface SegmentOption<T extends string> {

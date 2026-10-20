@@ -1,3 +1,4 @@
+/** /products: the product list with filters, sorting, paging, Excel export and delete. */
 import { DownloadIcon, PlusIcon, SearchIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
@@ -23,6 +24,7 @@ import { ProductCards, ProductsTable } from '../components/ProductsTable'
 import { toListParams, useProductFilters } from '../hooks/use-product-filters'
 import type { ProductSortKey } from '../types'
 
+/** Product list. Filters live in the URL; the search box is debounced. */
 export function ProductsPage() {
   const isAdmin = useIsAdmin()
   const { filters, update, clear, isFiltered } = useProductFilters()

@@ -1,8 +1,10 @@
+/** Top-bar button that switches between light and dark themes. */
 import { MoonIcon, SunIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/lib/theme'
 
+/** Sun / moon button that flips the theme. */
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
   const label = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'

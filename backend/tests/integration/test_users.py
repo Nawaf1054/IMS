@@ -14,6 +14,7 @@ from tests.factories import FakeAuthAdmin, auth_header, create_profile
 
 
 def new_user(**overrides: Any) -> dict[str, Any]:
+    """A valid create-user body; keyword arguments override fields."""
     return {
         "name": "Noura",
         "email": "noura@example.com",

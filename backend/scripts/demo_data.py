@@ -1,4 +1,4 @@
-"""Demo catalog and business settings: the same data as the UI design and the frontend mock."""
+"""Demo catalog and business settings: the same products, prices and stock as the UI design."""
 
 # (name, parent name)
 CATEGORIES: list[tuple[str, str | None]] = [

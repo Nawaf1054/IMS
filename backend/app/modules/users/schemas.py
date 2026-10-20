@@ -1,4 +1,4 @@
-"""Request/response schemas for users. Validation messages match the frontend's mock API."""
+"""User request and response schemas. Validation messages are the ones the UI shows."""
 
 import re
 from datetime import datetime
@@ -13,6 +13,8 @@ ROLES = {role.value for role in Role}
 
 
 class UserOut(Schema):
+    """A user as the API returns it."""
+
     id: int
     name: str
     email: str
@@ -23,6 +25,7 @@ class UserOut(Schema):
 
 
 def _clean_name(value: str | None) -> str | None:
+    """Trims the name and checks it isn't blank."""
     if value is None:
         return None
     name = value.strip()
@@ -32,6 +35,7 @@ def _clean_name(value: str | None) -> str | None:
 
 
 def _clean_email(value: str | None) -> str | None:
+    """Trims and lower-cases the email and checks its shape."""
     if value is None:
         return None
     email = value.strip().lower()
@@ -41,12 +45,15 @@ def _clean_email(value: str | None) -> str | None:
 
 
 def _check_role(value: object) -> object:
+    """Only `admin` or `staff`."""
     if value not in ROLES:
         raise ValueError("Choose a role.")
     return value
 
 
 class UserCreate(BaseModel):
+    """POST /users body."""
+
     # Defaults are validated too, so a missing field gets the same message as an empty one.
     name: str = Field(default="", validate_default=True)
     email: str = Field(default="", validate_default=True)
@@ -60,6 +67,8 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
+    """PATCH /users/{id} body. Fields left out keep their value."""
+
     name: str | None = None
     email: str | None = None
     role: Role | None = None
@@ -71,4 +80,5 @@ class UserUpdate(BaseModel):
     @field_validator("role", mode="before")
     @classmethod
     def _role(cls, value: object) -> object:
+        """Checks the role only when one was sent."""
         return None if value is None else _check_role(value)

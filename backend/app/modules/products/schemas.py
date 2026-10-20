@@ -1,4 +1,4 @@
-"""Product schemas. Validation messages match the frontend's mock API."""
+"""Product request and response schemas. Validation messages are the ones the UI shows."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -15,6 +15,8 @@ SortKey = Literal["name", "sku", "category", "cost_price", "sell_price", "quanti
 
 
 class ProductOut(BaseModel):
+    """A product as the API returns it."""
+
     id: int
     name: str
     sku: str
@@ -36,6 +38,8 @@ class ProductOut(BaseModel):
 
 
 class SalesSummary(BaseModel):
+    """A product's sales over the last 30 days."""
+
     quantity: int
     revenue: Money
     invoice_count: int
@@ -43,11 +47,15 @@ class SalesSummary(BaseModel):
 
 
 class ProductDetailOut(ProductOut):
+    """The product page: the product plus recent sales and when stock last arrived."""
+
     sales_last_30_days: SalesSummary
     last_received_at: datetime | None
 
 
 class DeleteResult(BaseModel):
+    """What DELETE /products/{id} did: removed the product or only deactivated it."""
+
     result: Literal["deleted", "deactivated"]
 
 
@@ -55,6 +63,7 @@ class DeleteResult(BaseModel):
 
 
 def _clean_name(value: str | None) -> str | None:
+    """Trims the name and checks it's present and not too long."""
     if value is None:
         return None
     name = value.strip()
@@ -66,6 +75,7 @@ def _clean_name(value: str | None) -> str | None:
 
 
 def _clean_sku(value: str | None) -> str | None:
+    """Trims and upper-cases the SKU and checks it's present and not too long."""
     if value is None:
         return None
     sku = value.strip().upper()
@@ -77,6 +87,7 @@ def _clean_sku(value: str | None) -> str | None:
 
 
 def _parse_price(value: object) -> Decimal | None:
+    """Parses a typed price ("19.5") into a Decimal rounded to cents."""
     if value is None:
         return None
     price = parse_money_input(value)
@@ -86,6 +97,7 @@ def _parse_price(value: object) -> Decimal | None:
 
 
 def _parse_min_quantity(value: object) -> object:
+    """Accepts only whole numbers of zero or more."""
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
@@ -94,10 +106,13 @@ def _parse_min_quantity(value: object) -> object:
 
 
 def _clean_description(value: str | None) -> str | None:
+    """Trims the description."""
     return None if value is None else value.strip()
 
 
 class ProductCreate(BaseModel):
+    """POST /products body. Quantity isn't accepted: new products start at zero."""
+
     # Defaults are validated too, so a missing field gets the same message as an empty one.
     name: str = Field(default="", validate_default=True)
     sku: str = Field(default="", validate_default=True)
@@ -116,6 +131,8 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    """PATCH /products/{id} body. Fields left out keep their value."""
+
     name: str | None = None
     sku: str | None = None
     category_id: int | None = None

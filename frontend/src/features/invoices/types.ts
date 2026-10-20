@@ -1,6 +1,8 @@
+/** Request and response types for the invoice endpoints that aren't shared entities. */
 import type { DateRangeParams, Money, PageParams } from '@/types/api'
 import type { InvoiceStatus } from '@/types/models'
 
+/** GET /invoices query (INV-7). */
 export interface InvoiceListParams extends PageParams, DateRangeParams {
   /** Matches invoice number or customer name (INV-7). */
   search?: string
@@ -16,6 +18,7 @@ export interface InvoiceStats {
   cancelled_total: Money
 }
 
+/** POST /invoices body. */
 export interface CreateInvoiceInput {
   customer_name: string | null
   discount: Money

@@ -1,6 +1,8 @@
+/** Tests for mapping Supabase sign-in errors to the app's error codes and messages. */
 import { isApiError } from '../api-error'
 import { toSignInError } from './supabase-session'
 
+/** A Supabase-like auth error; overrides replace the defaults. */
 const authError = (overrides: { code?: string; status?: number; message?: string; name?: string }) => ({
   name: 'AuthApiError',
   message: 'Something went wrong',

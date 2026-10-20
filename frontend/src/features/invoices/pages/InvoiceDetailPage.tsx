@@ -1,3 +1,4 @@
+/** /invoices/:id: one invoice with its lines, totals and stock movements; print, PDF and cancel. */
 import { CircleXIcon, DownloadIcon, PrinterIcon, ReceiptTextIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { useCancelInvoice, useInvoice } from '../api/queries'
 import { useInvoicePdf } from '../hooks/use-invoice-export'
 
+/** Invoice detail. Admins can cancel a completed invoice after confirming. */
 export function InvoiceDetailPage() {
   const id = Number(useParams().id)
   const isAdmin = useIsAdmin()

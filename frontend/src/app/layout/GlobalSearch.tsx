@@ -1,3 +1,4 @@
+/** Quick product search in the top bar. */
 import { SearchIcon } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'

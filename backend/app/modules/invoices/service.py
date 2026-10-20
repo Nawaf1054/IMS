@@ -46,6 +46,8 @@ TAX_RATE_STEP = Decimal("0.0001")
 
 @dataclass(frozen=True)
 class Totals:
+    """The money figures of an invoice."""
+
     subtotal: Decimal
     discount: Decimal
     tax_amount: Decimal
@@ -64,6 +66,7 @@ def compute_totals(line_totals: Iterable[Decimal], discount: Decimal, tax_rate: 
 
 
 def _summary_fields(invoice: Invoice) -> dict[str, object]:
+    """The fields shared by the list view and the detail view."""
     return {
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
@@ -77,10 +80,12 @@ def _summary_fields(invoice: Invoice) -> dict[str, object]:
 
 
 def to_summary(invoice: Invoice) -> InvoiceSummaryOut:
+    """The list view of an invoice."""
     return InvoiceSummaryOut.model_validate(_summary_fields(invoice))
 
 
 def to_out(db: Session, invoice: Invoice) -> InvoiceOut:
+    """The detail view of an invoice, with its lines and stock movements."""
     return InvoiceOut.model_validate(
         _summary_fields(invoice)
         | {
@@ -112,10 +117,12 @@ def to_out(db: Session, invoice: Invoice) -> InvoiceOut:
 
 @dataclass
 class _Line:
+    """One product on the invoice, after merging repeated lines for the same product."""
+
     product_id: int
     quantity: int
-    # None: sell at the product's price.
-    unit_price: Decimal | None
+    # The prices each merged line asked for; None means "the product's current price".
+    requested_prices: set[Decimal | None]
 
 
 def _parse_lines(data: InvoiceCreate) -> tuple[Decimal, list[_Line]]:
@@ -137,10 +144,10 @@ def _parse_lines(data: InvoiceCreate) -> tuple[Decimal, list[_Line]]:
             raise ValidationFailed("Each line needs a quantity of at least 1.", code="INVALID_QUANTITY")
         line = lines.get(item.product_id)
         if line is None:
-            lines[item.product_id] = _Line(item.product_id, item.quantity, price)
+            lines[item.product_id] = _Line(item.product_id, item.quantity, {price})
         else:
             line.quantity += item.quantity
-            line.unit_price = line.unit_price if line.unit_price is not None else price
+            line.requested_prices.add(price)
     return discount, list(lines.values())
 
 
@@ -153,7 +160,14 @@ def _price_line(line: _Line, product: Product, user: Profile) -> Decimal:
             f"Insufficient stock for {product.name}: only {product.quantity} available.",
             code="INSUFFICIENT_STOCK",
         )
-    price = product.sell_price if line.unit_price is None else line.unit_price
+    prices = {product.sell_price if p is None else p for p in line.requested_prices}
+    if len(prices) > 1:
+        # Merging the lines would have to drop one of the prices.
+        raise ValidationFailed(
+            f"{product.name} is on more than one line with different prices. Use one line per product.",
+            code="INVALID_PRICE",
+        )
+    price = prices.pop()
     # Staff can't change prices (PRD §4).
     if price != product.sell_price and user.role != Role.ADMIN:
         raise Forbidden("Only admins can change prices.")
@@ -161,6 +175,9 @@ def _price_line(line: _Line, product: Product, user: Profile) -> Decimal:
 
 
 def create_invoice(db: Session, user: Profile, data: InvoiceCreate) -> InvoiceOut:
+    """Creates an invoice: locks the products, checks stock and prices, saves the invoice,
+    records a SALE movement per line and commits once. Any error rolls everything back (INV-4).
+    """
     discount, lines = _parse_lines(data)
     products = products_service.get_many_for_update(db, [line.product_id for line in lines])
     items = []
@@ -215,10 +232,14 @@ def create_invoice(db: Session, user: Profile, data: InvoiceCreate) -> InvoiceOu
 
 
 def _not_found() -> NotFound:
+    """The error for an unknown invoice id."""
     return NotFound("Invoice not found.", code="INVOICE_NOT_FOUND")
 
 
 def cancel_invoice(db: Session, admin: Profile, invoice_id: int) -> InvoiceOut:
+    """Cancels a completed invoice: an IN movement per line restores the stock, then the
+    invoice is marked CANCELLED. Locks the invoice so it can't be cancelled twice (INV-6).
+    """
     invoice = repository.get_for_update(db, invoice_id)
     if invoice is None:
         raise _not_found()
@@ -249,6 +270,7 @@ def cancel_invoice(db: Session, admin: Profile, invoice_id: int) -> InvoiceOut:
 
 
 def get(db: Session, invoice_id: int) -> Invoice:
+    """The invoice, or 404 INVOICE_NOT_FOUND."""
     invoice = repository.get(db, invoice_id)
     if invoice is None:
         raise _not_found()
@@ -256,14 +278,17 @@ def get(db: Session, invoice_id: int) -> Invoice:
 
 
 def get_detail(db: Session, invoice_id: int) -> InvoiceOut:
+    """The detail view of an invoice, or 404."""
     return to_out(db, get(db, invoice_id))
 
 
 def _bounds(dates: DateRange) -> tuple[datetime | None, datetime | None]:
+    """UTC bounds for a business-local date filter."""
     return local_day_bounds(dates.start_date, dates.end_date, get_settings().business_tz)
 
 
 def list_invoices(db: Session, filters: InvoiceFilters, params: PageParams) -> Page[InvoiceSummaryOut]:
+    """One page of invoices matching the filters, newest first (INV-7)."""
     since, until = _bounds(filters)
     stmt = repository.list_query(
         search=(filters.search or "").strip() or None,
@@ -275,7 +300,22 @@ def list_invoices(db: Session, filters: InvoiceFilters, params: PageParams) -> P
     return paginate(db, stmt, params, to_summary)
 
 
+def export_rows(db: Session, filters: InvoiceFilters, limit: int) -> list[repository.ExportRow]:
+    """Invoices for the Excel export (EXP-3, EXP-5): the same filters and order as the list."""
+    since, until = _bounds(filters)
+    return repository.export_rows(
+        db,
+        search=(filters.search or "").strip() or None,
+        status=filters.status,
+        since=since,
+        until=until,
+        walk_in_label=WALK_IN_CUSTOMER,
+        limit=limit,
+    )
+
+
 def stats(db: Session, dates: DateRange) -> InvoiceStats:
+    """Completed and cancelled totals plus the average sale for the invoices list header."""
     row = repository.stats(db, *_bounds(dates))
     average = to_money(row.completed_total / row.completed_count) if row.completed_count else Decimal("0")
     return InvoiceStats(

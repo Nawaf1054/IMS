@@ -1,3 +1,4 @@
+/** The IMS logo mark. */
 import { PackageIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'

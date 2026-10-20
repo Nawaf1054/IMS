@@ -1,3 +1,4 @@
+/** Tests for the new-invoice totals (discount before tax, half-up rounding). */
 import { computeTotals, lineTotal } from './totals'
 
 describe('invoice totals', () => {

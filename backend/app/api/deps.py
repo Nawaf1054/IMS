@@ -22,6 +22,7 @@ def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     verifier: Annotated[TokenVerifier, Depends(get_token_verifier)],
 ) -> Profile:
+    """The signed-in, active profile for the request's bearer token (401 otherwise)."""
     return authenticate(db, verifier, credentials.credentials if credentials else None)
 
 
@@ -29,6 +30,7 @@ CurrentUser = Annotated[Profile, Depends(get_current_user)]
 
 
 def require_admin(user: CurrentUser) -> Profile:
+    """The current user if they're an admin; 403 for staff (AUTH-4)."""
     if user.role != Role.ADMIN:
         raise Forbidden()
     return user

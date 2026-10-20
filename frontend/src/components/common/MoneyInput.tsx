@@ -1,3 +1,4 @@
+/** Text input for amounts, with the currency code shown inside the field. */
 import type { ComponentProps } from 'react'
 
 import { Input } from '@/components/ui/input'

@@ -1,3 +1,4 @@
+/** Assistant chat (AI-1): conversation, suggested questions and the sources behind each answer. */
 import { ArrowUpIcon, CircleAlertIcon, DatabaseIcon, SparklesIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -15,6 +16,7 @@ type Entry =
 
 const SUGGESTIONS = ['Which products sold least this month?', 'What’s running low?', 'Revenue by category last week', 'Best-selling tools in September']
 
+/** The assistant's sparkle avatar next to its messages. */
 function AssistantAvatar() {
   return (
     <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary-soft-foreground">

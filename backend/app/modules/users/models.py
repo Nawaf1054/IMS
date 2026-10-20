@@ -12,6 +12,8 @@ from app.db.mixins import CreatedAtMixin, IdMixin
 
 
 class Role(StrEnum):
+    """Admin has full access; staff can sell and record stock but not delete or manage (PRD §4)."""
+
     ADMIN = "admin"
     STAFF = "staff"
 

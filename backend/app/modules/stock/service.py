@@ -24,6 +24,7 @@ MAX_QUANTITY = 2_147_483_647
 
 
 def to_out(movement: StockMovement) -> MovementOut:
+    """The API view of a movement."""
     return MovementOut(
         id=movement.id,
         product_id=movement.product_id,
@@ -125,6 +126,7 @@ def record_movement(db: Session, user: Profile, data: MovementCreate) -> Movemen
 def _page(
     db: Session, filters: ProductMovementFilters, params: PageParams, product_id: int | None
 ) -> Page[MovementOut]:
+    """One page of movements for the filters, optionally for a single product."""
     since, until = local_day_bounds(filters.start_date, filters.end_date, get_settings().business_tz)
     stmt = repository.list_query(product_id=product_id, type=filters.type, since=since, until=until)
     return paginate(db, stmt, params, to_out)
@@ -143,10 +145,19 @@ def list_product_movements(
     return _page(db, filters, params, product_id)
 
 
+def export_rows(db: Session, filters: MovementFilters, limit: int) -> list[repository.ExportRow]:
+    """Movements for the Excel export (EXP-2, EXP-5): the same filters and order as the list."""
+    since, until = local_day_bounds(filters.start_date, filters.end_date, get_settings().business_tz)
+    return repository.export_rows(
+        db, product_id=filters.product_id, type=filters.type, since=since, until=until, limit=limit
+    )
+
+
 def invoice_movements(db: Session, invoice_id: int) -> list[MovementOut]:
     """An invoice's SALE movements, then its reversals if it was cancelled."""
     return [to_out(m) for m in repository.for_invoice(db, invoice_id)]
 
 
 def has_movements(db: Session, product_id: int) -> bool:
+    """Whether the product has any recorded movement."""
     return repository.exists_for_product(db, product_id)

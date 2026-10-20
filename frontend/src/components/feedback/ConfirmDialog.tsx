@@ -1,3 +1,4 @@
+/** Confirmation dialog shown before destructive actions (delete, cancel, deactivate). */
 import type { ReactNode } from 'react'
 
 import {

@@ -10,5 +10,7 @@ class Schema(BaseModel):
 
 
 class ErrorResponse(BaseModel):
+    """The body of every error response: a readable message and a stable code."""
+
     detail: str
     code: str

@@ -14,6 +14,7 @@ from tests.factories import create_invoice, create_product
 
 
 def _weasyprint_loads() -> bool:
+    """Whether WeasyPrint's system libraries are available on this machine."""
     try:
         import weasyprint  # noqa: F401
     except OSError:  # Pango and friends aren't installed (e.g. on Windows)
@@ -27,6 +28,7 @@ PRINTED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
 
 @pytest.fixture
 def business(db: Session) -> None:
+    """Saves realistic business settings for the printed invoice."""
     settings_service.update(
         db,
         BusinessSettingsUpdate(
@@ -39,6 +41,7 @@ def business(db: Session) -> None:
 
 
 def html_for(db: Session, invoice_id: int) -> str:
+    """The printable invoice HTML for an invoice, printed at a fixed time in UTC."""
     return pdf.render_html(
         service.get_detail(db, invoice_id), settings_service.read(db), printed_at=PRINTED_AT, tz=UTC
     )

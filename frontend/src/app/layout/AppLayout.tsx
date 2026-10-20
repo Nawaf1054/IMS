@@ -1,3 +1,4 @@
+/** The signed-in app shell: sidebar, top bar and the current page. */
 import { MenuIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router'

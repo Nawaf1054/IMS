@@ -1,3 +1,4 @@
+/** "Generate insights" panel (AI-4): pick a period and get a short written report. */
 import { SparklesIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -15,6 +16,7 @@ import type { FigureTone } from '../types'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+/** The periods offered for a report: this month, last month and the last 30 days. */
 function periods(today = new Date()): Array<{ id: string; label: string; range: DateRange }> {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
   const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)

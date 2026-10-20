@@ -1,6 +1,8 @@
+/** Request types for the stock movement endpoints. */
 import type { DateRangeParams, PageParams } from '@/types/api'
 import type { MovementType } from '@/types/models'
 
+/** GET /stock-movements query (STK-5). */
 export interface MovementListParams extends PageParams, DateRangeParams {
   type?: MovementType
   product_id?: number

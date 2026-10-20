@@ -19,16 +19,6 @@ export interface User {
   last_active_at: string | null
 }
 
-export interface TokenPair {
-  access_token: string
-  refresh_token: string
-  token_type: 'bearer'
-}
-
-export interface LoginResponse extends TokenPair {
-  user: User
-}
-
 // ── Catalog ─────────────────────────────────────────────────────────────────
 
 export interface Category {

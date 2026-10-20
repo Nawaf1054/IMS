@@ -1,3 +1,4 @@
+/** Hook that delays a fast-changing value, used by search boxes. */
 import { useEffect, useState } from 'react'
 
 import { SEARCH_DEBOUNCE_MS } from '@/config/constants'

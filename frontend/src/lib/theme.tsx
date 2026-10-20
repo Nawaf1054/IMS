@@ -1,11 +1,14 @@
+/** Light/dark theme: the provider that applies it to <html> and the hook to read or change it. */
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { STORAGE_KEYS } from '@/config/constants'
 
 import { readStorage, writeStorage } from './storage'
 
+/** The two colour themes. */
 export type Theme = 'light' | 'dark'
 
+/** What useTheme() returns. */
 interface ThemeContextValue {
   theme: Theme
   setTheme: (theme: Theme) => void
@@ -14,6 +17,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+/** The saved theme, or the system preference when none was saved. */
 function initialTheme(): Theme {
   const stored = readStorage(STORAGE_KEYS.theme)
   if (stored === 'light' || stored === 'dark') return stored
@@ -39,6 +43,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
+/** The current theme and functions to change it. Must be used inside ThemeProvider. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext)

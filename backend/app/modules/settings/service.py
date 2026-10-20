@@ -12,6 +12,7 @@ DEFAULT_BUSINESS_NAME = "My Business"
 
 
 def _defaults() -> dict[str, str]:
+    """Values used for settings that were never saved."""
     config = get_settings()
     return {
         "business_name": DEFAULT_BUSINESS_NAME,
@@ -22,11 +23,13 @@ def _defaults() -> dict[str, str]:
 
 
 def read(db: Session) -> BusinessSettingsOut:
+    """The current settings: saved values over the defaults."""
     values = _defaults() | repository.get_all(db)
     return BusinessSettingsOut(**{key: values[key] for key in BusinessSettingsOut.model_fields})
 
 
 def update(db: Session, data: BusinessSettingsUpdate) -> BusinessSettingsOut:
+    """Saves the changed settings and returns the result."""
     repository.upsert(db, data.model_dump(exclude_none=True))
     db.commit()
     return read(db)

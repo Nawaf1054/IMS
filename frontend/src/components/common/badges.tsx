@@ -30,6 +30,7 @@ export function StockStatusBadge({ product, size }: { product: Pick<Product, 'is
   return null
 }
 
+/** Green "Completed" or red "Cancelled" for an invoice. */
 export function InvoiceStatusBadge({ status, size }: { status: InvoiceStatus; size?: 'sm' | 'default' }) {
   return status === 'COMPLETED' ? (
     <StatusBadge tone="success" size={size} icon={<CheckIcon className="size-3" strokeWidth={2.5} aria-hidden="true" />}>
@@ -42,6 +43,7 @@ export function InvoiceStatusBadge({ status, size }: { status: InvoiceStatus; si
   )
 }
 
+/** Coloured IN / OUT / ADJUSTMENT / SALE label with its icon. */
 export function MovementTypeBadge({ type, compact }: { type: MovementType; compact?: boolean }) {
   const style = MOVEMENT_STYLES[type]
   const Icon = style.icon
@@ -59,6 +61,7 @@ export function MovementTypeBadge({ type, compact }: { type: MovementType; compa
   )
 }
 
+/** "Admin" or "Staff" label. */
 export function RoleBadge({ role }: { role: Role }) {
   return (
     <span

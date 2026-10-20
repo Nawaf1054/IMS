@@ -13,4 +13,6 @@ NAMING_CONVENTION = {
 
 
 class Base(DeclarativeBase):
+    """Base class for every ORM model. Its naming convention gives constraints stable names."""
+
     metadata = MetaData(naming_convention=NAMING_CONVENTION)

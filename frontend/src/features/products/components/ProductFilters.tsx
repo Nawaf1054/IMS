@@ -1,3 +1,4 @@
+/** Search, category, low-stock and inactive filters above the product list (PRD-3). */
 import { SearchInput } from '@/components/common/SearchInput'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils'
 
 import type { ProductFilters as Filters } from '../hooks/use-product-filters'
 
+/** Props for ProductFilters. */
 interface ProductFiltersProps {
   filters: Filters
   searchDraft: string
@@ -17,6 +19,7 @@ interface ProductFiltersProps {
   isFiltered: boolean
 }
 
+/** The filter bar; changes are reported to the page, which keeps them in the URL. */
 export function ProductFilters({ filters, searchDraft, onSearchChange, onChange, onClear, isFiltered }: ProductFiltersProps) {
   const { data: categories } = useCategories()
 

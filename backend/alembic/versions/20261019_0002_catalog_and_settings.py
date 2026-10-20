@@ -19,6 +19,7 @@ TABLES = ("categories", "products", "settings")
 
 
 def upgrade() -> None:
+    """Creates the categories, products and settings tables."""
     op.create_table(
         "categories",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -72,6 +73,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drops the categories, products and settings tables."""
     op.drop_table("settings")
     op.drop_table("products")
     op.drop_table("categories")

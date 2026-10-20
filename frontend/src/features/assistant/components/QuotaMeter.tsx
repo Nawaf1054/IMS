@@ -1,9 +1,11 @@
+/** Meter showing how many AI requests the user has left this hour (AI-8). */
 import { ClockIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
 import { useAiQuota } from '../api/queries'
 
+/** "14:05" from an ISO timestamp. */
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 /** AI-8: requests left in the rolling hour; turns amber when three or fewer remain. */

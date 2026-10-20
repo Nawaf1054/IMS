@@ -1,3 +1,4 @@
+/** Rules for which chart granularities make sense for a date range. */
 import { type DateRange, daysInRange } from '@/lib/dates'
 
 import type { Granularity } from '../types'
