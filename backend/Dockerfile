@@ -24,4 +24,6 @@ RUN uv sync --frozen --no-dev --no-install-project --python-preference only-syst
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Hosts such as Render pass the port to listen on in $PORT; locally it's 8000.
+# Proxy headers are trusted so redirects keep the https:// the platform's proxy received.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
