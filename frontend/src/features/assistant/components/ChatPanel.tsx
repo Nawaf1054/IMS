@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { isApiError } from '@/lib/api-client'
 
 import { useAiQuota, useChat } from '../api/queries'
-import type { AssistantMessage, ChatTurn } from '../types'
+import { type AssistantMessage, type ChatTurn, MAX_CHAT_TURNS, MAX_MESSAGE_LENGTH } from '../types'
 
 type Entry =
   | { id: number; kind: 'user'; content: string }
@@ -45,9 +45,12 @@ export function ChatPanel() {
     const withQuestion: Entry[] = [...history, { id: nextId.current++, kind: 'user', content: text }]
     setEntries(withQuestion)
     setDraft('')
-    const turns: ChatTurn[] = withQuestion.flatMap((e): ChatTurn[] =>
-      e.kind === 'user' ? [{ role: 'user', content: e.content }] : e.kind === 'assistant' ? [{ role: 'assistant', content: e.message.content }] : [],
-    )
+    // The backend takes the most recent turns only (it drops a leading assistant turn itself).
+    const turns: ChatTurn[] = withQuestion
+      .flatMap((e): ChatTurn[] =>
+        e.kind === 'user' ? [{ role: 'user', content: e.content }] : e.kind === 'assistant' ? [{ role: 'assistant', content: e.message.content }] : [],
+      )
+      .slice(-MAX_CHAT_TURNS)
     chat.mutate(turns, {
       onSuccess: ({ message }) => setEntries((all) => [...all, { id: nextId.current++, kind: 'assistant', message }]),
       onError: (error) =>
@@ -95,27 +98,29 @@ export function ChatPanel() {
                 <p className="leading-[22px] whitespace-pre-line">{entry.message.content}</p>
                 {entry.message.rows.length > 0 && (
                   <div className="overflow-hidden rounded-lg border">
-                    {entry.message.rows.map((row) => (
-                      <div key={row.label} className="flex justify-between gap-4 border-b px-3 py-2 text-[13px] last:border-b-0">
+                    {entry.message.rows.map((row, i) => (
+                      <div key={`${i}-${row.label}`} className="flex justify-between gap-4 border-b px-3 py-2 text-[13px] last:border-b-0">
                         <span>{row.label}</span>
                         <span className="whitespace-nowrap text-subtle-foreground">{row.value}</span>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] text-muted-foreground">Data used</span>
-                  {entry.message.sources.map((source) => (
-                    <span
-                      key={source.label}
-                      title={`Read-only tool: ${source.tool}`}
-                      className="inline-flex h-[22px] items-center gap-[5px] rounded-md border bg-subtle px-2 text-[11px] text-subtle-foreground"
-                    >
-                      <DatabaseIcon className="size-[11px]" aria-hidden="true" />
-                      {source.label}
-                    </span>
-                  ))}
-                </div>
+                {entry.message.sources.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] text-muted-foreground">Data used</span>
+                    {entry.message.sources.map((source) => (
+                      <span
+                        key={source.label}
+                        title={`Read-only tool: ${source.tool}`}
+                        className="inline-flex h-[22px] items-center gap-[5px] rounded-md border bg-subtle px-2 text-[11px] text-subtle-foreground"
+                      >
+                        <DatabaseIcon className="size-[11px]" aria-hidden="true" />
+                        {source.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -168,6 +173,7 @@ export function ChatPanel() {
             <textarea
               rows={1}
               value={draft}
+              maxLength={MAX_MESSAGE_LENGTH}
               disabled={exhausted}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {

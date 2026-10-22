@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.api.deps import DbSession
+from app.modules.ai.router import router as ai_router
 from app.modules.auth.router import router as auth_router
 from app.modules.categories.router import router as categories_router
 from app.modules.dashboard.router import router as dashboard_router
@@ -33,3 +34,4 @@ api_router.include_router(invoices_router)
 api_router.include_router(exports_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(settings_router)
+api_router.include_router(ai_router)

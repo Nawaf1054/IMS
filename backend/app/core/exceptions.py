@@ -73,6 +73,23 @@ class UpstreamError(AppError):
     detail = "A connected service failed. Try again."
 
 
+class RateLimited(AppError):
+    """429: the user has used up their requests for the current window (AI-8)."""
+
+    status_code = 429
+    code = "RATE_LIMITED"
+    detail = "Too many requests. Try again later."
+
+
+class AiUnavailable(AppError):
+    """503: the LLM provider failed, timed out, refused or isn't configured (AI-7). The message is
+    always generic; the provider's own error is only logged."""
+
+    status_code = 503
+    code = "AI_UNAVAILABLE"
+    detail = "The AI service isn’t responding. Try again in a moment."
+
+
 def _error(status_code: int, detail: str, code: str) -> JSONResponse:
     """Builds the standard `{detail, code}` JSON error response."""
     return JSONResponse(status_code=status_code, content={"detail": detail, "code": code})

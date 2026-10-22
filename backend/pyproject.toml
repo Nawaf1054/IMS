@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.14",
     "fastapi>=0.115",
+    "google-genai>=2.32.0",
     "httpx>=0.28",
     "jinja2>=3.1.6",
     "lxml>=6.0",

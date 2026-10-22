@@ -6,6 +6,7 @@ the shop's calendar, not the server's. Only COMPLETED invoices count as sales.
 """
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -103,6 +104,42 @@ def kpis(db: Session) -> DashboardKpis:
         previous_month_sales=sales["previous_month"].revenue,
         low_stock_count=products.low_stock,
         out_of_stock_count=products.out_of_stock,
+    )
+
+
+# ── Sales summary (used by the AI assistant) ────────────────────────────────
+
+
+@dataclass(frozen=True)
+class PeriodSales:
+    """Completed sales in a range and in the same-length period just before it."""
+
+    start: date
+    end: date
+    revenue: Decimal
+    invoice_count: int
+    previous_start: date
+    previous_end: date
+    previous_revenue: Decimal
+    previous_invoice_count: int
+
+
+def sales_summary(db: Session, query: DashboardRange) -> PeriodSales:
+    """Revenue and invoice count for the range and the previous period, in one query."""
+    start, end = _range(query)
+    previous_start, previous_end = previous_period(start, end)
+    sales = repository.sales_in_windows(
+        db, {"current": _bounds(start, end), "previous": _bounds(previous_start, previous_end)}
+    )
+    return PeriodSales(
+        start=start,
+        end=end,
+        revenue=sales["current"].revenue,
+        invoice_count=sales["current"].count,
+        previous_start=previous_start,
+        previous_end=previous_end,
+        previous_revenue=sales["previous"].revenue,
+        previous_invoice_count=sales["previous"].count,
     )
 
 

@@ -14,10 +14,10 @@ export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 export const SEARCH_DEBOUNCE_MS = 250
 
 /**
- * The AI assistant (PRD §6.8, milestone M8) isn't built on the backend yet. While this is false the
- * assistant page shows a "Coming soon" preview and nothing calls the /ai endpoints.
+ * The AI assistant (PRD §6.8) shipped in milestone M8. Set this to false to hide it again: the
+ * assistant page then shows a "Coming soon" preview and nothing calls the /ai endpoints.
  */
-export const AI_ASSISTANT_ENABLED = false
+export const AI_ASSISTANT_ENABLED = true
 
 /** localStorage keys used by the app. */
 export const STORAGE_KEYS = {

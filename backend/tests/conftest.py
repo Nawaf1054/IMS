@@ -13,6 +13,10 @@ os.environ["SUPABASE_JWT_SECRET"] = "test-jwt-secret-with-at-least-32-characters
 os.environ.setdefault("SUPABASE_SECRET_KEY", "sb_secret_test")
 # UTC+3 with no daylight saving; date-filter tests rely on it.
 os.environ["BUSINESS_TIMEZONE"] = "Asia/Riyadh"
+# Safety net: tests never call the real Gemini API. Even if the FakeLLMClient override were
+# missing, the real client refuses to run without a key (503 AI_UNAVAILABLE, no network call).
+os.environ["LLM_API_KEY"] = ""
+os.environ["AI_RATE_LIMIT_PER_HOUR"] = "20"
 
 from sqlalchemy.engine import make_url
 
@@ -36,9 +40,10 @@ from sqlalchemy.orm import Session  # noqa: E402
 from app.core.security import get_token_verifier  # noqa: E402
 from app.db.session import engine, get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.modules.ai.client import get_llm_client  # noqa: E402
 from app.modules.auth.supabase_admin import get_auth_admin  # noqa: E402
 from app.modules.users.models import Profile, Role  # noqa: E402
-from tests.factories import FakeAuthAdmin, auth_header, create_profile  # noqa: E402
+from tests.factories import FakeAuthAdmin, FakeLLMClient, auth_header, create_profile  # noqa: E402
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -80,6 +85,16 @@ def db() -> Iterator[Session]:
         connection.close()
 
 
+@pytest.fixture(autouse=True)
+def llm() -> Iterator[FakeLLMClient]:
+    """Every test talks to a scripted fake instead of Gemini. Tests that use the AI endpoints
+    script its replies with `llm.script(...)`."""
+    fake = FakeLLMClient()
+    app.dependency_overrides[get_llm_client] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(get_llm_client, None)
+
+
 @pytest.fixture
 def auth_admin() -> FakeAuthAdmin:
     """An in-memory stand-in for Supabase's admin API."""
@@ -93,7 +108,8 @@ def client(db: Session, auth_admin: FakeAuthAdmin) -> Iterator[TestClient]:
     app.dependency_overrides[get_auth_admin] = lambda: auth_admin
     with TestClient(app) as test_client:
         yield test_client
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_auth_admin, None)
 
 
 @pytest.fixture
