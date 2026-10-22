@@ -45,3 +45,8 @@ export interface ProductDescriptionResult {
   description: string
   quota: AiQuota
 }
+
+/** Input limits POST /ai/chat enforces: the history sent is at most this many turns… */
+export const MAX_CHAT_TURNS = 20
+/** …and each message is at most this many characters. */
+export const MAX_MESSAGE_LENGTH = 2000

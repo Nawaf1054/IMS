@@ -1,4 +1,4 @@
-/** Create / edit product form with validation, margin preview and the (coming soon) AI description. */
+/** Create / edit product form with validation, margin preview and the AI description draft (AI-5). */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LockIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react'
 import { useState } from 'react'

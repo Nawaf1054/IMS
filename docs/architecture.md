@@ -19,7 +19,7 @@ backend/
 │       ├── invoices/        + numbering.py, pdf.py, templates/invoice.html
 │       ├── exports/         + xlsx.py (workbook formatting)
 │       ├── dashboard/       Aggregate SQL only
-│       ├── ai/              + client.py (LLM adapter), tools.py (read-only tools), prompts.py
+│       ├── ai/              + client.py (LLM adapter), tools.py (read-only tools), prompts.py, formatting.py
 │       └── settings/        Business settings (tax rate, currency, ...)
 ├── alembic/versions/        Database migrations
 ├── scripts/seed.py          Admin user + sample data
@@ -45,7 +45,8 @@ backend/
 - All timestamps are UTC.
 - Stock quantity changes only through `stock.service`, inside a transaction.
 - Errors are raised as `AppError` subclasses and rendered as `{ "detail", "code" }`.
-- The AI module reads data only through `ai/tools.py` and never builds SQL.
+- The AI module reads business data only through `ai/tools.py` (which calls the dashboard and products services) and never builds SQL for it. `ai/repository.py` only touches its own `ai_requests` table (the rate limit).
+- Only `ai/client.py` imports the LLM provider's SDK.
 
 ## Frontend (`frontend/`)
 
@@ -94,12 +95,12 @@ Features: `auth`, `dashboard`, `products`, `categories`, `stock`, `invoices`, `a
 ### API contract
 The frontend always talks to the real backend; there is no mock mode. Each feature's `types.ts` is the contract: the backend's Pydantic schemas match those field names and shapes exactly.
 
-The UI was first built against an in-browser mock API (MSW), removed after M7. For M8, `features/assistant/types.ts` defines the AI payloads, and the old mock (`frontend/src/mocks/handlers/ai.ts` in commit `3f52d3f`) shows the expected behaviour: tool calls, quota and rate-limit errors.
+The UI was first built against an in-browser mock API (MSW), removed after M7. `features/assistant/types.ts` defines the AI payloads; the backend's `ai/schemas.py` matches it.
 
-Endpoints the UI needs beyond the PRD §8 table: `GET /auth/me`, `GET /invoices/summary`, `GET /invoices/next-number` (done), `GET /ai/quota` (M8).
+Endpoints the UI needs beyond the PRD §8 table: `GET /auth/me`, `GET /invoices/summary`, `GET /invoices/next-number`, `GET /ai/quota`.
 
-### Unreleased features
-`AI_ASSISTANT_ENABLED` in `config/constants.ts` is `false` until M8 ships. While it's off, `/assistant` shows a blurred, non-interactive preview under a "Coming soon" card (`components/feedback/ComingSoon.tsx`), the product form's AI description button is disabled, and nothing calls `/ai/*`.
+### Feature flags
+`AI_ASSISTANT_ENABLED` in `config/constants.ts` is `true` since M8. Setting it to `false` hides the assistant again: `/assistant` then shows a blurred, non-interactive preview under a "Coming soon" card (`components/feedback/ComingSoon.tsx`), the product form's AI description button is disabled, and nothing calls `/ai/*`.
 
 ## Authentication (Supabase Auth)
 
@@ -130,7 +131,10 @@ Answers to the PRD's open questions (§12) and other choices made along the way.
 | Database & auth | Supabase: hosted Postgres + Supabase Auth. Local dev uses the Supabase CLI stack (`npx supabase start`); CI uses plain Postgres. |
 | Python tooling | uv (`backend/pyproject.toml`, `uv.lock`); ruff for lint and format (instead of black). |
 | Production DB connection | Supabase session pooler (port 5432, IPv4). If the transaction pooler (6543) is ever used, set psycopg `prepare_threshold=None`. |
-| LLM provider | Decide at M8; `ai/client.py` stays an adapter. |
+| LLM provider | Google Gemini via the official `google-genai` SDK (Interactions API, stateless with `store=False`: the backend sends the conversation each time and Google keeps nothing). Only `ai/client.py` imports the SDK; the rest of the module uses provider-neutral message, tool-call and tool-result types, so swapping providers means one new adapter class. Default model `gemini-3.5-flash-lite` (`LLM_MODEL` overrides). Requests time out after `LLM_TIMEOUT_SECONDS` (30) with one retry. Every provider failure (no key, timeout, network, 4xx/5xx, a blocked or empty reply) becomes `503 AI_UNAVAILABLE`; details are logged with the key masked, never sent to the client. The key is read from server settings only (AI-6), and an empty key fails at request time, not at startup (AI-7). |
+| AI tools | Five read-only tools in `ai/tools.py` (AI-2): sales summary, top products, low-stock products, category revenue, product search. Each has a hand-written JSON schema, a Pydantic model that validates the model's arguments (dates, `limit` ≤ 20, the dashboard's five-year cap) and a runner that calls the dashboard or products service. A runner returns data for the model plus a label (the "Data used" chip) and display rows, so the answer's rows and sources come from tool results, never from the model's text. Bad calls (unknown tool, invalid arguments) go back to the model as error results. The chat loop allows 5 model calls per question and 8 tool calls per round; the model is told to quote tool figures and never calculate its own. Insights (AI-4): the backend computes every figure and sends only those to the model, which returns JSON sections that are validated. |
+| AI access | Every signed-in user may use the AI endpoints, as PRD §8 says ("All"). PRD §4 lists the assistant only under Admin; §8 was followed. |
+| AI rate limit | `ai_requests` table (user, kind, time; index on `(user_id, created_at)`), rolling one-hour window of `AI_RATE_LIMIT_PER_HOUR` (20). The rules are in `core/rate_limit.py`, storage in `ai/repository.py`. The quota is checked before calling the model and a request is recorded only after it succeeded, so failures are free; `resets_at` is when the oldest counted request expires. Over the limit: `429 RATE_LIMITED`. Two simultaneous requests can both pass when one is left; for an hourly allowance that's acceptable. Rows older than the window are pruned when a new one is recorded. |
 | Customer management | Not decided yet. |
 | Category nesting | One level (CAT-2). A category that has subcategories can't be moved under another one (`NESTING_TOO_DEEP`). |
 | Demo stock | Products are created at quantity 0; `seed --demo` then records one "Opening stock" IN movement per product (`demo_data.OPENING_STOCK`), so quantities match the design and PRD-4 holds. |

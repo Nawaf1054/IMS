@@ -1,4 +1,4 @@
-/** /assistant: AI chat and insights (PRD §6.8). Until the AI milestone (M8) ships, it shows a blurred "Coming soon" preview. */
+/** /assistant: AI chat and insights (PRD §6.8). With AI_ASSISTANT_ENABLED off, it shows a blurred "Coming soon" preview instead. */
 import { SparklesIcon } from 'lucide-react'
 
 import { ComingSoon } from '@/components/feedback/ComingSoon'

@@ -26,7 +26,7 @@ See [docs/architecture.md](docs/architecture.md) for the full structure and conv
 
 The app always talks to the real backend and database; there is no mock mode. Needs Docker, Node and [uv](https://docs.astral.sh/uv/).
 
-Implemented: sign-in, users, categories, products, settings, stock movements, invoices with PDF download, Excel exports and the analytics dashboard (M1–M7). The AI assistant (M8) isn't built yet: its page shows a "Coming soon" preview.
+Implemented: sign-in, users, categories, products, settings, stock movements, invoices with PDF download, Excel exports, the analytics dashboard (M1–M7) and the AI assistant (M8, see [AI assistant setup](#ai-assistant-setup)).
 
 Invoice PDFs use WeasyPrint, which needs the Pango system library. The Docker image includes it; on Windows without it the PDF endpoint answers `PDF_UNAVAILABLE` (printing from the browser still works).
 
@@ -76,3 +76,17 @@ Or run steps 3–4 in containers: `docker compose up --build` (Supabase still ru
 | `uv run alembic revision --autogenerate -m "..."` | New migration |
 
 Supabase Studio (local DB browser) runs at http://127.0.0.1:54323.
+
+## AI assistant setup
+
+The assistant (chat, insights report, product-description drafts) uses **Google Gemini** through the official `google-genai` SDK. The model only words the answers: it reads IMS data through five read-only tools, and every figure is computed by the backend. Each user gets `AI_RATE_LIMIT_PER_HOUR` requests per rolling hour (default 20); failed requests aren't counted.
+
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. Put it in the root `.env` (server side only, never in a `VITE_` variable):
+   ```bash
+   LLM_API_KEY=<your Gemini API key>
+   LLM_MODEL=gemini-3.5-flash-lite   # optional: the default when empty
+   ```
+3. Apply the migrations (`uv run alembic upgrade head`; M8 adds the `ai_requests` table) and restart the backend. With Docker, rebuild it: `docker compose up --build -d backend`.
+
+Without a key the rest of the app works normally and the AI endpoints answer `503 AI_UNAVAILABLE`. Tests and CI never call Gemini: they replace the client with a scripted fake and run with an empty key.

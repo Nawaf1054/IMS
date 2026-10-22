@@ -11,6 +11,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # backend/app/core/config.py -> repository root (one .env shared with docker-compose and Vite)
 ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
+# Gemini model used when LLM_MODEL is empty: Google's stable, low-cost fast model (has a free tier).
+DEFAULT_LLM_MODEL = "gemini-3.5-flash-lite"
+
 
 class Settings(BaseSettings):
     """Every setting the backend reads from the environment or the repository-root .env."""
@@ -42,9 +45,12 @@ class Settings(BaseSettings):
     # IANA zone that defines the business day for date filters ("today", "2026-10-19").
     business_timezone: str = "Asia/Riyadh"
 
-    # AI assistant
+    # AI assistant (Google Gemini). The key stays on the server (AI-6); empty means the AI endpoints
+    # answer 503 AI_UNAVAILABLE while the rest of the app keeps working (AI-7).
     llm_api_key: str = ""
     llm_model: str = ""
+    # Seconds to wait for one model response before giving up.
+    llm_timeout_seconds: float = 30
     ai_rate_limit_per_hour: int = 20
 
     # Seed admin
@@ -66,6 +72,11 @@ class Settings(BaseSettings):
     def business_tz(self) -> ZoneInfo:
         """BUSINESS_TIMEZONE as a tzinfo object."""
         return ZoneInfo(self.business_timezone)
+
+    @property
+    def llm_model_name(self) -> str:
+        """LLM_MODEL, or the default Gemini model when it's empty."""
+        return self.llm_model.strip() or DEFAULT_LLM_MODEL
 
     @property
     def cors_origin_list(self) -> list[str]:

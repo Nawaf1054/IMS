@@ -2,6 +2,7 @@
 
 import itertools
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.common.time import utcnow
 from app.core.config import get_settings
+from app.modules.ai.client import AssistantMessage, Message, ToolCall, ToolSpec
 from app.modules.auth.supabase_admin import AuthAdminError
 from app.modules.categories.models import Category
 from app.modules.invoices import service as invoices_service
@@ -202,3 +204,47 @@ class FakeAuthAdmin:
     def find_user_id_by_email(self, email: str) -> uuid.UUID | None:
         """The id of the user with this email, or None."""
         return next((uid for uid, u in self.users.items() if u["email"] == email), None)
+
+
+class FakeLLMClient:
+    """Stands in for the LLM in every test (tests never call Gemini). `script()` queues replies:
+    an AssistantMessage is returned, an exception is raised. Every call is recorded in `calls`."""
+
+    def __init__(self) -> None:
+        self.replies: list[AssistantMessage | Exception] = []
+        self.calls: list[dict[str, Any]] = []
+
+    def script(self, *replies: AssistantMessage | Exception) -> None:
+        """Queues the next replies, in order."""
+        self.replies.extend(replies)
+
+    def generate(
+        self,
+        *,
+        system: str,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec] = (),
+        json_schema: dict[str, Any] | None = None,
+    ) -> AssistantMessage:
+        """Returns (or raises) the next scripted reply."""
+        self.calls.append(
+            {"system": system, "messages": list(messages), "tools": list(tools), "json_schema": json_schema}
+        )
+        if not self.replies:
+            raise AssertionError("FakeLLMClient was called with no scripted reply left")
+        reply = self.replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+
+def llm_text(text: str) -> AssistantMessage:
+    """A scripted final answer."""
+    return AssistantMessage(text=text)
+
+
+def llm_tool_call(name: str, call_id: str | None = None, **arguments: Any) -> AssistantMessage:
+    """A scripted turn that asks for one tool call."""
+    return AssistantMessage(
+        tool_calls=(ToolCall(id=call_id or f"call-{next(_counter)}", name=name, arguments=arguments),)
+    )
