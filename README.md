@@ -7,7 +7,7 @@
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `fahad@alnoor-supplies.sa` | `demo1234` |
-| Admin | `noura@alnoor-supplies.sa` | `demo1234` |
+| Staff | `noura@alnoor-supplies.sa` | `demo1234` |
 
 <sub>The backend runs on a free server that sleeps when idle, so the first sign-in can take up to a minute.</sub>
 
