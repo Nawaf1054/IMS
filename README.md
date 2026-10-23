@@ -1,92 +1,264 @@
+<div align="center">
+
 # IMS — Inventory Management System
 
-A web application for small shops and warehouses to manage products, categories, stock movements and sales invoices, with Excel exports, printable bills, an analytics dashboard and an LLM-powered assistant.
+A full-stack web app for small shops and warehouses to manage products, stock and sales invoices in one place.<br>
+It comes with an analytics dashboard, Excel exports, printable invoices and an AI assistant that answers questions about your own data.
 
-| Layer    | Stack |
-|----------|-------|
-| Frontend | React + TypeScript, Vite, shadcn/ui + Tailwind CSS, TanStack Query, React Router, Recharts |
-| Backend  | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic |
-| Database & Auth | Supabase (PostgreSQL + Supabase Auth) |
-| DevOps   | Docker, docker-compose, GitHub Actions |
+![React](https://img.shields.io/badge/React_19-20232A?logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
-## Repository layout
+<img src="docs/screenshots/dashboard.png" alt="IMS dashboard" width="100%">
+
+</div>
+
+---
+
+## Tech stack
+
+| Layer | Technologies |
+|-------|--------------|
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui (Radix), TanStack Query, React Router, React Hook Form + Zod, Recharts |
+| **Backend** | Python 3.13, FastAPI, SQLAlchemy 2, Alembic, Pydantic |
+| **Database & Auth** | Supabase (PostgreSQL + Supabase Auth, JWT) |
+| **AI** | Google Gemini via the `google-genai` SDK, with tool calling |
+| **Documents** | openpyxl (Excel exports), WeasyPrint (invoice PDFs) |
+| **Testing** | pytest, Vitest + React Testing Library |
+| **DevOps** | Docker, docker-compose, GitHub Actions CI |
+
+---
+
+## Features
+
+### 📊 Analytics dashboard
+Live KPIs (stock value, today's and this month's sales, low-stock count), a revenue chart compared with the previous period, revenue by category, top-selling products and a low-stock list. One date range (7D, 30D, 90D, month-to-date or custom) drives every widget, and all figures are calculated in SQL on the backend.
+
+### 📦 Products & categories
+Search, filter, sort and paginate the catalog. Products show their stock level at a glance, with low-stock and inactive badges. Categories support one level of subcategories.
+
+<img src="docs/screenshots/products.png" alt="Products list" width="100%">
+
+Each product has its own page with its stock history, a 30-day stock-level chart and recent sales.
+
+<img src="docs/screenshots/product-detail.png" alt="Product details" width="100%">
+
+### 🔄 Stock movements
+Stock never changes silently: every change is recorded as a movement (**IN**, **OUT**, **ADJUSTMENT** or **SALE**) with the user, a note and the balance after it. The history can be filtered by type and date range and exported to Excel.
+
+<img src="docs/screenshots/stock-movements.png" alt="Stock movements" width="100%">
+
+### 🧾 Invoices
+Build an invoice by searching or tapping products. Saving it reduces stock in the same database transaction, and invoice numbers are sequential per year (`INV-2026-00001`). Invoices can be printed, downloaded as a PDF or exported to Excel. Admins can cancel an invoice, which restores its stock automatically.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/new-invoice.png" alt="New invoice"></td>
+    <td width="50%"><img src="docs/screenshots/invoice-print.png" alt="Printable invoice"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Creating an invoice</sub></td>
+    <td align="center"><sub>Printable invoice / PDF</sub></td>
+  </tr>
+</table>
+
+### 🤖 AI assistant
+Ask questions in plain language ("What's running low?", "Best-selling tools in September") and generate a written insights report for any period. The model never sees the database directly: it calls five **read-only** backend tools, every figure is computed by IMS, and each answer shows which data it used. Each user has an hourly request limit. The assistant can also draft product descriptions.
+
+<img src="docs/screenshots/ai-assistant.png" alt="AI assistant" width="100%">
+
+### 👥 Users & roles
+Two roles, enforced on the backend (not just hidden in the UI):
+
+| | Admin | Staff |
+|---|:---:|:---:|
+| View products, record stock, create & print invoices, dashboard | ✅ | ✅ |
+| Change prices, delete records, cancel invoices | ✅ | ❌ |
+| Manage users and business settings | ✅ | ❌ |
+
+Users are deactivated rather than deleted, so their invoices and movements stay attributed.
+
+<img src="docs/screenshots/users.png" alt="Users and roles" width="100%">
+
+### 🌙 Dark mode
+A full dark theme, remembered per browser.
+
+<img src="docs/screenshots/dark-mode.png" alt="Dark mode" width="100%">
+
+<details>
+<summary><b>More screenshots</b></summary>
+<br>
+
+| Sign in | Invoices |
+|---|---|
+| <img src="docs/screenshots/login.png" alt="Sign in"> | <img src="docs/screenshots/invoices.png" alt="Invoices list"> |
+| **Invoice details** | **Categories** |
+| <img src="docs/screenshots/invoice-detail.png" alt="Invoice details"> | <img src="docs/screenshots/categories.png" alt="Categories"> |
+| **Business settings** | |
+| <img src="docs/screenshots/settings.png" alt="Settings"> | |
+
+</details>
+
+---
+
+## Run it on your computer
+
+### 1. Install the prerequisites
+
+| Tool | Why | Get it |
+|------|-----|--------|
+| **Git** | Download the code | https://git-scm.com/downloads |
+| **Docker Desktop** | Runs the local database and auth (Supabase) | https://www.docker.com/products/docker-desktop |
+| **Node.js 24** | Runs the frontend (and the Supabase CLI via `npx`) | https://nodejs.org |
+| **uv** | Installs Python and the backend packages | https://docs.astral.sh/uv/getting-started/installation |
+
+You don't need to install Python yourself: `uv` downloads the right version (3.13) automatically.
+Make sure **Docker Desktop is open and running** before step 3.
+
+### 2. Get the code
+
+```bash
+git clone https://github.com/Nawaf1054/IMS.git
+cd IMS
+```
+
+### 3. Start the database and auth (Supabase)
+
+```bash
+npx supabase start
+```
+
+The first run downloads the Docker images and takes a few minutes. When it finishes it prints the local URLs and keys. You can print them again any time with `npx supabase status`.
+
+### 4. Create your `.env` file
+
+Copy the example file:
+
+```bash
+# macOS / Linux / Git Bash
+cp .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+Open `.env` and fill in these values from the `npx supabase status` output:
+
+| Variable | Value from `supabase status` |
+|----------|------------------------------|
+| `SUPABASE_SECRET_KEY` | **Secret key** (or `service_role key` on older CLI versions) |
+| `SUPABASE_JWT_SECRET` | **JWT secret** |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | **Publishable key** (or `anon key` on older CLI versions) |
+| `SEED_ADMIN_PASSWORD` | Any password you like, for your first admin account |
+
+Everything else already points at the local stack.
+
+### 5. Start the backend
+
+Open a terminal in the project folder:
+
+```bash
+cd backend
+uv sync                                  # install Python + packages
+uv run alembic upgrade head              # create the database tables
+uv run python -m scripts.seed --demo     # create the admin + demo users, products and stock
+uv run uvicorn app.main:app --reload     # start the API
+```
+
+The API runs at http://localhost:8000 and its interactive docs at http://localhost:8000/api/docs. Keep this terminal open.
+
+### 6. Start the frontend
+
+Open a **second** terminal in the project folder:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 7. Sign in
+
+Open **http://localhost:5173** and sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` from your `.env`. The `--demo` seed also creates these accounts (password `demo1234`):
+
+| Role | Email |
+|------|-------|
+| Admin | `admin@a.com` |
+| Staff | `staff@a.com`, `majed@alnoor-supplies.sa` |
+
+> The demo seed adds a catalog with opening stock but no invoices, so the dashboard's sales figures start at zero. Create a few invoices to see the charts come alive.
+
+### Optional: turn on the AI assistant
+
+1. Create a free API key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. Add it to `.env` (server side only, never in a `VITE_` variable):
+   ```bash
+   LLM_API_KEY=your-gemini-api-key
+   ```
+3. Restart the backend.
+
+Without a key, everything else works normally; only the assistant's requests are refused.
+
+### Next time you run it
+
+```bash
+npx supabase start                                   # if it isn't already running
+cd backend  && uv run uvicorn app.main:app --reload  # terminal 1
+cd frontend && npm run dev                           # terminal 2
+```
+
+Stop the database with `npx supabase stop`. Browse the database at http://127.0.0.1:54323 (Supabase Studio).
+
+<details>
+<summary><b>Run the backend and frontend in Docker instead</b></summary>
+<br>
+
+Supabase still runs through `npx supabase start`. Then:
+
+```bash
+docker compose up --build
+docker compose run --rm backend alembic upgrade head
+docker compose run --rm backend python -m scripts.seed --demo
+```
+
+When using the **local** Supabase stack, uncomment the `environment:` block for the `backend` service in `docker-compose.yml` so the container can reach the database on your machine.
+
+</details>
+
+<details>
+<summary><b>Troubleshooting</b></summary>
+<br>
+
+- **`npx supabase start` fails:** make sure Docker Desktop is running, then try again.
+- **"Download PDF" says PDFs are unavailable (Windows):** PDF generation needs the Pango library, which Windows doesn't include. Printing from the browser still works, and the Docker backend includes Pango.
+- **Can't sign in:** check that the three Supabase values in `.env` match `npx supabase status`, then restart both the backend and the frontend.
+- **Port already in use:** another program is using one of the ports (8000, 5173 or Supabase's 54321–54324). Stop it and try again.
+
+</details>
+
+---
+
+## Project structure
 
 ```
 IMS/
-├── backend/     FastAPI service (feature modules under app/modules)
-├── frontend/    React SPA (feature folders under src/features)
-├── supabase/    Supabase CLI config for the local stack (Postgres + Auth)
-├── docs/        PRD and architecture notes
-└── .github/     CI workflows
+├── backend/     FastAPI service: one module per feature under app/modules, Alembic migrations, seed scripts
+├── frontend/    React app: one folder per feature under src/features
+├── supabase/    Supabase CLI config for the local database and auth
+├── docs/        Product requirements (PRD) and architecture notes
+└── .github/     CI: lint, type check, tests and build on every push
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the full structure and conventions, and [docs/PRD.md](docs/PRD.md) for requirements.
+See [docs/architecture.md](docs/architecture.md) for conventions and [docs/PRD.md](docs/PRD.md) for the full requirements.
 
-## Getting started
+## Tests and code quality
 
-The app always talks to the real backend and database; there is no mock mode. Needs Docker, Node and [uv](https://docs.astral.sh/uv/).
-
-Implemented: sign-in, users, categories, products, settings, stock movements, invoices with PDF download, Excel exports, the analytics dashboard (M1–M7) and the AI assistant (M8, see [AI assistant setup](#ai-assistant-setup)).
-
-Invoice PDFs use WeasyPrint, which needs the Pango system library. The Docker image includes it; on Windows without it the PDF endpoint answers `PDF_UNAVAILABLE` (printing from the browser still works).
-
-1. **Start Supabase locally** (Postgres + Auth in Docker; first run downloads the images):
-   ```bash
-   npx supabase start      # prints API URL, DB URL, publishable/secret keys and JWT secret
-   npx supabase status     # shows them again
-   ```
-2. **Configure:** copy `.env.example` to `.env`. Fill in `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `SEED_ADMIN_PASSWORD`.
-3. **Backend:**
-   ```bash
-   cd backend
-   uv sync
-   uv run alembic upgrade head
-   uv run python -m scripts.seed           # the admin user from .env
-   uv run python -m scripts.seed --demo    # optional: + demo users, catalog, opening stock and settings
-   uv run uvicorn app.main:app --reload    # http://localhost:8000/api/docs
-   ```
-4. **Frontend:**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev          # http://localhost:5173
-   ```
-   Sign in with the admin from `.env`. With `--demo`, these accounts also exist (password `demo1234`):
-
-   | Role  | Email |
-   |-------|-------|
-   | Admin | `admin@a.com` |
-   | Staff | `staff@a.com`, `majed@alnoor-supplies.sa` |
-
-   The demo seed records an "Opening stock" movement per product, so quantities match the design. It creates no invoices, so the dashboard's sales figures start at zero.
-
-Or run steps 3–4 in containers: `docker compose up --build` (Supabase still runs via `npx supabase start`).
-
-| Frontend script | Does |
-|-----------------|------|
-| `npm run build` | Typecheck + production build |
-| `npm run test` | Vitest unit tests |
-| `npm run lint` / `npm run format` | ESLint / Prettier |
-
-| Backend command | Does |
-|-----------------|------|
-| `uv run pytest --cov` | Tests (needs a Postgres; uses `<db>_test` on the `DATABASE_URL` server) |
-| `uv run ruff check . && uv run ruff format .` | Lint / format |
-| `uv run mypy app scripts` | Type check |
-| `uv run alembic revision --autogenerate -m "..."` | New migration |
-
-Supabase Studio (local DB browser) runs at http://127.0.0.1:54323.
-
-## AI assistant setup
-
-The assistant (chat, insights report, product-description drafts) uses **Google Gemini** through the official `google-genai` SDK. The model only words the answers: it reads IMS data through five read-only tools, and every figure is computed by the backend. Each user gets `AI_RATE_LIMIT_PER_HOUR` requests per rolling hour (default 20); failed requests aren't counted.
-
-1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
-2. Put it in the root `.env` (server side only, never in a `VITE_` variable):
-   ```bash
-   LLM_API_KEY=<your Gemini API key>
-   LLM_MODEL=gemini-3.5-flash-lite   # optional: the default when empty
-   ```
-3. Apply the migrations (`uv run alembic upgrade head`; M8 adds the `ai_requests` table) and restart the backend. With Docker, rebuild it: `docker compose up --build -d backend`.
-
-Without a key the rest of the app works normally and the AI endpoints answer `503 AI_UNAVAILABLE`. Tests and CI never call Gemini: they replace the client with a scripted fake and run with an empty key.
+| Frontend (`frontend/`) | Backend (`backend/`) |
+|---|---|
+| `npm run test` — unit tests (Vitest) | `uv run pytest --cov` — tests (needs the database running) |
+| `npm run lint` — ESLint | `uv run ruff check .` — lint |
+| `npm run typecheck` — TypeScript | `uv run mypy app scripts` — type check |
+| `npm run build` — production build | `uv run ruff format .` — format |
