@@ -2,6 +2,15 @@
 
 # IMS — Inventory Management System
 
+**Try it: [ims-three-theta.vercel.app](https://ims-three-theta.vercel.app)**
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `fahad@alnoor-supplies.sa` | `demo1234` |
+| Admin | `noura@alnoor-supplies.sa` | `demo1234` |
+
+<sub>The backend runs on a free server that sleeps when idle, so the first sign-in can take up to a minute.</sub>
+
 A full-stack web app for small shops and warehouses to manage products, stock and sales invoices in one place.<br>
 It comes with an analytics dashboard, Excel exports, printable invoices and an AI assistant that answers questions about your own data.
 
